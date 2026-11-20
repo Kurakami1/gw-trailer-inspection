@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1e293b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="./app.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <title>Gebrüder Weiss - ტრაილერის ინსპექტირება</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Georgian Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stable html2canvas & jsPDF libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Noto Sans Georgian', sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .gw-orange { background-color: #f37021; }
+        .gw-orange-text { color: #f37021; }
+        .gw-orange-border { border-color: #f37021; }
+        .gw-dark { background-color: #1e293b; }
+
+        #signatureCanvas {
+            touch-action: none;
+            cursor: crosshair;
+            background-color: #ffffff;
+        }
+
+        /* Offscreen Strict A4 Layout (210mm x 297mm) */
+        #a4-offscreen-host {
+            position: fixed;
+            left: -10000px;
+            top: 0;
+            width: 210mm;
+            height: 297mm;
+            background: #ffffff;
+            z-index: -50;
+            pointer-events: none;
+        }
+
+        #a4-sheet {
+            width: 210mm;
+            height: 297mm;
+            padding: 10mm 12mm;
+            box-sizing: border-box;
+            background: #ffffff;
+            color: #0f172a;
+            font-family: 'Noto Sans Georgian', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="pb-28">
+
+    <!-- Top Corporate Header -->
+    <header class="gw-dark text-white sticky top-0 z-40 shadow-md border-b-4 gw-orange-border">
+        <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div id="headerLogoBox" class="bg-white rounded-xl px-2.5 py-1.5 h-10 flex items-center justify-center shadow-sm">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-3 h-3 rounded-full gw-orange inline-block"></span>
+                        <span class="font-extrabold text-slate-900 text-sm tracking-tight">Gebrüder Weiss</span>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-sm sm:text-base font-bold leading-tight">ტრაილერის ინსპექტირება</h1>
+                    <p class="text-[11px] text-slate-300">გარეგანი დათვალიერების აქტი</p>
+                </div>
+            </div>
+
+            <button type="button" id="openSettingsBtn" class="bg-slate-700 hover:bg-slate-600 active:scale-95 transition text-white px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow cursor-pointer">
+                <i class="fa-solid fa-gear gw-orange-text"></i>
+                <span>პარამეტრები</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Toast Notification -->
+    <div id="toastBox" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 hidden w-[92%] max-w-md">
+        <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center justify-between text-sm border-l-4 border-orange-500">
+            <span id="toastText">შეტყობინება</span>
+            <button type="button" id="closeToastBtn" class="ml-3 text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Setup Reminder Banner -->
+    <div id="setupReminder" class="max-w-2xl mx-auto px-4 mt-3 hidden">
+        <div class="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 flex items-center justify-between shadow-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-circle-exclamation text-amber-600 text-xl"></i>
+                <div class="text-xs text-amber-900">
+                    <p class="font-bold">შეავსეთ პროფილი ერთჯერადად</p>
+                    <p>მიუთითეთ თქვენი სახელი, გვარი, ხელმოწერა და მეილი, რათა ავტომატურად ჩაჯდეს ბლანკში.</p>
+                </div>
+            </div>
+            <button type="button" id="reminderSettingsBtn" class="bg-amber-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl shrink-0 ml-2">
+                შევსება
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Form -->
+    <main class="max-w-2xl mx-auto px-4 mt-4 space-y-4">
+
+        <!-- 1. Date, Direction, Vehicle Type -->
+        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <h2 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                    <span class="w-6 h-6 rounded-lg gw-orange text-white flex items-center justify-center text-xs"><i class="fa-solid fa-route"></i></span>
+                    <span>რეისი და თარიღი</span>
+                </h2>
+                <button type="button" id="resetFormBtn" class="text-xs text-slate-500 hover:text-red-600 flex items-center space-x-1 py-1 px-2 rounded-lg">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>გასუფთავება</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                    <label for="inputDateTime" class="block text-xs font-bold text-slate-600 mb-1">თარიღი / დრო *</label>
+                    <input type="datetime-local" id="inputDateTime" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:border-orange-500 bg-slate-50">
+                </div>
+
+                <div>
+                    <label for="selectDirection" class="block text-xs font-bold text-slate-600 mb-1">მიმართულება *</label>
+                    <select id="selectDirection" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-orange-500 bg-slate-50">
+                        <option value="GESWIETBI">GESWIETBI</option>
+                        <option value="GESSTBTBI">GESSTBTBI</option>
+                        <option value="GESSILTBI">GESSILTBI</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1.5">მანქანის ტიპი *</label>
+                <div class="grid grid-cols-3 gap-2" id="vehicleTypeButtons">
+                    <button type="button" data-vtype="ტენტი" class="vtype-option py-2.5 px-2 rounded-xl border-2 border-orange-500 bg-orange-50 text-orange-700 font-bold text-xs sm:text-sm flex flex-col items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-truck text-base"></i>
+                        <span>ტენტი</span>
+                    </button>
+                    <button type="button" data-vtype="მაცივარი" class="vtype-option py-2.5 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs sm:text-sm flex flex-col items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-snowflake text-base"></i>
+                        <span>მაცივარი</span>
+                    </button>
+                    <button type="button" data-vtype="კონტეინერი" class="vtype-option py-2.5 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs sm:text-sm flex flex-col items-center justify-center gap-1 transition">
+                        <i class="fa-solid fa-box text-base"></i>
+                        <span>კონტეინერი</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Vehicle Plates, Seal & Driver -->
+        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-4">
+            <div class="border-b border-slate-100 pb-2.5">
+                <h2 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                    <span class="w-6 h-6 rounded-lg gw-orange text-white flex items-center justify-center text-xs"><i class="fa-solid fa-id-card"></i></span>
+                    <span>სატრანსპორტო საშუალება და მძღოლი</span>
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="inputTruckPlate" class="block text-xs font-bold text-slate-600 mb-1">მანქანის ნომერი *</label>
+                    <input type="text" id="inputTruckPlate" placeholder="მაგ: BG007LG" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-extrabold uppercase tracking-wider focus:outline-none focus:border-orange-500 bg-slate-50">
+                </div>
+
+                <div>
+                    <label for="inputTrailerPlate" class="block text-xs font-bold text-slate-600 mb-1">მისაბმელის ნომერი *</label>
+                    <input type="text" id="inputTrailerPlate" placeholder="მაგ: BG007L" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-extrabold uppercase tracking-wider focus:outline-none focus:border-orange-500 bg-slate-50">
+                </div>
+            </div>
+
+            <div id="containerNumberWrap" class="hidden">
+                <label for="inputContainerNumber" class="block text-xs font-bold text-slate-600 mb-1">კონტეინერის ნომერი</label>
+                <input type="text" id="inputContainerNumber" placeholder="მაგ: TCLU1234567" autocomplete="off" class="w-full rounded-xl border border-orange-300 px-3.5 py-2.5 text-sm font-extrabold uppercase tracking-wider focus:outline-none focus:border-orange-500 bg-orange-50">
+                <p class="text-[11px] text-slate-500 mt-1">გამოჩნდება მხოლოდ „კონტეინერის“ არჩევისას.</p>
+            </div>
+
+            <!-- Live PDF File Name Indicator -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-center justify-between text-xs">
+                <span class="text-slate-500 font-medium"><i class="fa-regular fa-file-pdf text-red-500 mr-1.5"></i>PDF ფაილის სახელი:</span>
+                <span id="liveFileName" class="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">GW_Inspection.pdf</span>
+            </div>
+
+            <div>
+                <label for="inputSealNumber" class="block text-xs font-bold text-slate-600 mb-1">ლუქის ნომერი / ნომრები</label>
+                <input type="text" id="inputSealNumber" placeholder="მაგ: 08585501" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold uppercase focus:outline-none focus:border-orange-500 bg-slate-50">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label for="inputDriverName" class="block text-xs font-bold text-slate-600 mb-1">მძღოლის სახელი და გვარი</label>
+                    <input type="text" id="inputDriverName" placeholder="სახელი გვარი" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:border-orange-500 bg-slate-50">
+                </div>
+
+                <div>
+                    <label for="inputDriverPhone" class="block text-xs font-bold text-slate-600 mb-1">მძღოლის ტელეფონი</label>
+                    <input type="tel" id="inputDriverPhone" placeholder="+995 5XX XX XX XX" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:border-orange-500 bg-slate-50">
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Condition Checklist (კი / არა) -->
+        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3.5">
+            <div class="border-b border-slate-100 pb-2.5 flex items-center justify-between">
+                <h2 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                    <span class="w-6 h-6 rounded-lg gw-orange text-white flex items-center justify-center text-xs"><i class="fa-solid fa-clipboard-check"></i></span>
+                    <span>გარეგანი მდგომარეობა</span>
+                </h2>
+                <span class="text-[11px] font-semibold text-slate-400">მონიშნეთ კი / არა</span>
+            </div>
+
+            <div class="space-y-2.5" id="checklistRows">
+                <!-- Item 1 -->
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-2">
+                    <div>
+                        <p class="font-bold text-sm text-slate-800">1. ტენტის მდგომარეობა</p>
+                        <p class="text-[11px] text-slate-500">მთელია / დაზიანების გარეშე</p>
+                    </div>
+                    <div class="flex space-x-1.5 shrink-0" data-item="tenti">
+                        <button type="button" data-val="კი" class="chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition">კი</button>
+                        <button type="button" data-val="არა" class="chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition">არა</button>
+                    </div>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-2">
+                    <div>
+                        <p class="font-bold text-sm text-slate-800">2. ლუქის მდგომარეობა</p>
+                        <p class="text-[11px] text-slate-500">დაუზიანებელია / სწორად დევს</p>
+                    </div>
+                    <div class="flex space-x-1.5 shrink-0" data-item="luqi">
+                        <button type="button" data-val="კი" class="chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition">კი</button>
+                        <button type="button" data-val="არა" class="chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition">არა</button>
+                    </div>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-2">
+                    <div>
+                        <p class="font-bold text-sm text-slate-800">3. ტროსის მდგომარეობა</p>
+                        <p class="text-[11px] text-slate-500">მთელია / გადაბმის გარეშე</p>
+                    </div>
+                    <div class="flex space-x-1.5 shrink-0" data-item="trosi">
+                        <button type="button" data-val="კი" class="chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition">კი</button>
+                        <button type="button" data-val="არა" class="chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition">არა</button>
+                    </div>
+                </div>
+
+                <!-- Item 4 -->
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-2">
+                    <div>
+                        <p class="font-bold text-sm text-slate-800">4. ბორტის მდგომარეობა</p>
+                        <p class="text-[11px] text-slate-500">დაზიანების გარეშე / იკეტება</p>
+                    </div>
+                    <div class="flex space-x-1.5 shrink-0" data-item="borti">
+                        <button type="button" data-val="კი" class="chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition">კი</button>
+                        <button type="button" data-val="არა" class="chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition">არა</button>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label for="inputNotes" class="block text-xs font-bold text-slate-600 mb-1">დამატებითი შენიშვნა / დაზიანების აღწერა</label>
+                <textarea id="inputNotes" rows="2" placeholder="მიუთითეთ თუ რომელიმე დეტალი დაზიანებულია..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:border-orange-500 bg-slate-50"></textarea>
+            </div>
+        </section>
+
+        <!-- 4. Photo Uploader (Max 4 high-res photos) -->
+        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <h2 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+                    <span class="w-6 h-6 rounded-lg gw-orange text-white flex items-center justify-center text-xs"><i class="fa-solid fa-camera"></i></span>
+                    <span>ფოტოფიქსაცია (მაქსიმუმ 4 ფოტო)</span>
+                </h2>
+                <span id="photoCounterBadge" class="text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full">0 / 4</span>
+            </div>
+
+            <button type="button" id="triggerPhotoInputBtn" class="w-full border-2 border-dashed border-slate-300 hover:border-orange-500 bg-slate-50 active:bg-orange-50 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition">
+                <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xl mb-2">
+                    <i class="fa-solid fa-camera-retro"></i>
+                </div>
+                <p class="text-sm font-bold text-slate-700">ფოტოს გადაღება ან არჩევა</p>
+                <p class="text-xs text-slate-400 mt-0.5">მაღალი ხარისხით და პროპორციების დაცვით ჩაჯდება ბლანკში</p>
+            </button>
+            <input type="file" id="hiddenPhotoInput" accept="image/*" multiple class="hidden">
+
+            <div id="photoThumbnailsGrid" class="grid grid-cols-2 gap-3 hidden"></div>
+        </section>
+
+        <!-- Inspection History / PDF Archive -->
+        <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-slate-800 text-white flex items-center justify-center text-xs"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                    <span>ინსპექტირების ისტორია / PDF არქივი</span>
+                </h2>
+                <span id="historyCount" class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">0</span>
+            </div>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input id="historySearch" type="search" placeholder="ძებნა: მანქანა, მისაბმელი, კონტეინერი, თარიღი..." class="w-full rounded-xl border border-slate-300 pl-9 pr-3.5 py-3 text-sm focus:outline-none focus:border-orange-500 bg-slate-50">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="backupHistoryBtn" class="rounded-xl bg-orange-50 border border-orange-200 text-orange-800 py-2.5 text-xs font-bold"><i class="fa-solid fa-file-zipper mr-1"></i> სარეზერვო ZIP</button>
+                <button type="button" id="clearHistoryBtn" class="rounded-xl bg-red-50 border border-red-200 text-red-600 py-2.5 text-xs font-bold">ისტორიის გასუფთავება</button>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1">
+                <div class="flex justify-between text-[11px]"><span class="text-slate-500">გამოყენებული სივრცე</span><strong id="historyStorageText" class="text-slate-700">მოწმდება...</strong></div>
+                <div class="h-1.5 rounded-full bg-slate-200 overflow-hidden"><div id="historyStorageBar" class="h-full bg-orange-500" style="width:0%"></div></div>
+                <p id="historyStorageNote" class="text-[10px] text-slate-400">არქივი ინახება ამ მოწყობილობის ამავე ბრაუზერში.</p>
+            </div>
+            <div id="historyList" class="space-y-2">
+                <div class="text-center text-xs text-slate-400 py-4">ისტორია იტვირთება...</div>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+                <button type="button" id="historyPrevBtn" class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold disabled:opacity-40">წინა</button>
+                <span id="historyPageLabel" class="text-[11px] text-slate-500">გვერდი 1</span>
+                <button type="button" id="historyNextBtn" class="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold disabled:opacity-40">შემდეგი</button>
+            </div>
+            <p class="text-[10px] text-slate-400">ერთ გვერდზე იტვირთება მაქსიმუმ 20 ჩანაწერი. სხვა მოწყობილობაზე ავტომატურად არ სინქრონდება; სარეზერვო ZIP შეინახეთ უსაფრთხო ადგილას.</p>
+        </section>
+
+        <!-- 5. Auto-filled Inspector Summary -->
+        <section class="bg-slate-800 text-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">დათვალიერება ჩაატარა (ავტომატური)</p>
+                <p id="summaryInspectorName" class="font-bold text-sm mt-0.5 text-orange-400">არ არის მითითებული</p>
+                <p id="summaryRecipientEmail" class="text-xs text-slate-300 mt-0.5">მეილი: არ არის მითითებული</p>
+            </div>
+            <div class="bg-white rounded-xl p-1.5 h-12 w-24 flex items-center justify-center overflow-hidden">
+                <img id="summarySigImg" src="" alt="ხელმოწერა" class="max-h-full max-w-full object-contain hidden">
+                <span id="summaryNoSig" class="text-[10px] text-slate-400 text-center leading-tight">ხელმოწერა<br>ცარიელია</span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Fixed Bottom Action Buttons -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 z-30 shadow-[0_-4px_15px_rgba(0,0,0,0.06)]">
+        <div class="max-w-2xl mx-auto flex space-x-2.5">
+            <button type="button" id="downloadPdfBtn" class="px-4 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-bold text-xs sm:text-sm flex items-center justify-center space-x-1.5 transition shrink-0">
+                <i class="fa-solid fa-download text-orange-400"></i>
+                <span>PDF ჩამოტვირთვა</span>
+            </button>
+            <button type="button" id="sendEmailPdfBtn" class="flex-1 py-3.5 px-4 rounded-xl gw-orange hover:bg-orange-600 active:scale-95 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center space-x-2 shadow-lg shadow-orange-500/30 transition">
+                <i class="fa-solid fa-paper-plane text-sm"></i>
+                <span>გაგზავნა მეილზე (Gmail / Share)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- SETTINGS MODAL                                                        -->
+    <!-- ===================================================================== -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/75 z-50 hidden flex items-center justify-center p-3 overflow-y-auto">
+        <div class="bg-white rounded-3xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+            <div class="gw-dark text-white px-5 py-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-user-gear gw-orange-text"></i>
+                    <h3 class="font-bold text-base">პარამეტრები</h3>
+                </div>
+                <button type="button" id="closeSettingsBtn" class="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto space-y-5">
+                <!-- 1. Inspector Info -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-extrabold uppercase tracking-wider text-orange-600">1. ინსპექტორის მონაცემები</h4>
+                    <div>
+                        <label for="cfgInspectorName" class="block text-xs font-bold text-slate-700 mb-1">ინსპექტორის სახელი და გვარი *</label>
+                        <input type="text" id="cfgInspectorName" placeholder="მაგ: ალექსანდრე შალამბერიძე" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label for="cfgInspectorPos" class="block text-xs font-bold text-slate-700 mb-1">პოზიცია</label>
+                        <input type="text" id="cfgInspectorPos" placeholder="მაგ: Yard Manager" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label for="cfgRecipientEmail" class="block text-xs font-bold text-slate-700 mb-1">მიმღების ელ-ფოსტა *</label>
+                        <input type="email" id="cfgRecipientEmail" placeholder="example@gw-world.com" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-medium focus:border-orange-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- 2. Signature Pad -->
+                <div class="space-y-2 border-t border-slate-200 pt-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-orange-600">2. ხელმოწერა</h4>
+                        <button type="button" id="clearSignatureBtn" class="text-xs text-red-600 font-bold hover:underline py-1 px-2">
+                            <i class="fa-solid fa-eraser mr-1"></i>გასუფთავება
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-500">მოაწერეთ ხელი თითით ქვემოთ მოცემულ ჩარჩოში:</p>
+                    <div class="border-2 border-slate-300 rounded-2xl overflow-hidden bg-white relative">
+                        <canvas id="signatureCanvas" class="w-full h-32 block"></canvas>
+                    </div>
+                </div>
+
+                <!-- 3. Company Logo -->
+                <div class="space-y-2 border-t border-slate-200 pt-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-orange-600">3. კომპანიის ლოგო</h4>
+                        <button type="button" id="resetLogoBtn" class="text-xs text-slate-500 hover:text-red-600">სტანდარტული</button>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div id="cfgLogoPreview" class="h-12 w-32 border border-slate-200 rounded-xl bg-slate-50 flex items-center justify-center p-1.5 overflow-hidden">
+                            <span class="font-extrabold text-xs text-slate-800">Gebrüder Weiss</span>
+                        </div>
+                        <button type="button" id="uploadLogoTriggerBtn" class="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3.5 py-2.5 rounded-xl flex items-center space-x-1.5">
+                            <i class="fa-solid fa-image"></i>
+                            <span>ლოგოს ატვირთვა</span>
+                        </button>
+                        <input type="file" id="hiddenLogoInput" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <!-- 4. Routes Manager -->
+                <div class="space-y-2 border-t border-slate-200 pt-4">
+                    <h4 class="text-xs font-extrabold uppercase tracking-wider text-orange-600">4. მიმართულებების მართვა</h4>
+                    <div class="flex space-x-2">
+                        <input type="text" id="newRouteInput" placeholder="ახალი კოდი (მაგ: GEKUTTBI)" class="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold uppercase focus:border-orange-500 focus:outline-none">
+                        <button type="button" id="addRouteBtn" class="gw-orange text-white px-4 py-2 rounded-xl text-xs font-bold">დამატება</button>
+                    </div>
+                    <div id="cfgRoutesList" class="flex flex-wrap gap-2 pt-1"></div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 border-t border-slate-200 shrink-0">
+                <button type="button" id="saveSettingsBtn" class="w-full py-3.5 rounded-xl gw-orange hover:bg-orange-600 text-white font-extrabold text-sm shadow-md">
+                    შენახვა
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- OFFSCREEN A4 DOCUMENT TEMPLATE (210mm x 297mm)                        -->
+    <!-- ===================================================================== -->
+    <div id="a4-offscreen-host">
+        <div id="a4-sheet">
+            <!-- Upper Content: Header, Meta, Tables, Notes -->
+            <div>
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f37021; padding-bottom: 8px; margin-bottom: 10px;">
+                    <div id="pdfLogoSlot" style="height: 36px; display: flex; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 8px; background: #f37021; color: #ffffff; padding: 5px 12px; border-radius: 4px;">
+                            <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.3px;">Gebrüder Weiss</span>
+                            <span style="width: 12px; height: 12px; border: 2px solid #ffffff; border-radius: 50%; display: inline-block;"></span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; font-weight: 800; color: #0f172a;">სატრანსპორტო საშუალების გარეგანი აღწერის აქტი</div>
+                        <div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">EXTERIOR TRAILER / VEHICLE INSPECTION REPORT</div>
+                    </div>
+                </div>
+
+                <!-- Meta Bar -->
+                <div style="display: grid; grid-template-columns: 1.25fr 1fr 0.8fr; align-items: center; column-gap: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 12px; margin-bottom: 10px; font-size: 10.5px;">
+                    <div style="min-width: 0;">
+                        <div style="color: #64748b; font-weight: 600; margin-bottom: 3px;">თარიღი / დრო:</div>
+                        <strong id="pdfDateTime" style="display: block; color: #0f172a; white-space: nowrap;">—</strong>
+                    </div>
+                    <div style="min-width: 0;">
+                        <div style="color: #64748b; font-weight: 600; margin-bottom: 3px;">მიმართულება:</div>
+                        <span id="pdfDirection" style="display: inline-block; min-width: 88px; box-sizing: border-box; text-align: center; background: #f37021; color: #ffffff; font-weight: 800; font-size: 10px; letter-spacing: 0.2px; padding: 3px 9px; border-radius: 4px; white-space: nowrap;">—</span>
+                    </div>
+                    <div style="min-width: 0;">
+                        <div style="color: #64748b; font-weight: 600; margin-bottom: 3px;">მანქანის ტიპი:</div>
+                        <strong id="pdfVehicleType" style="display: block; color: #0f172a; white-space: nowrap;">—</strong>
+                    </div>
+                </div>
+
+                <!-- Vehicle & Driver Table -->
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
+                    <tr>
+                        <td style="width: 24%; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">მანქანის ნომერი:</td>
+                        <td id="pdfTruckPlate" style="width: 26%; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 800; font-size: 13px; color: #0f172a;">—</td>
+                        <td style="width: 24%; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">მისაბმელის ნომერი:</td>
+                        <td id="pdfTrailerPlate" style="width: 26%; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 800; font-size: 13px; color: #0f172a;">—</td>
+                    </tr>
+                    <tr id="pdfContainerRow" style="display: none;">
+                        <td style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">კონტეინერის ნომერი:</td>
+                        <td id="pdfContainerNumber" colspan="3" style="border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 800; font-size: 13px; color: #0f172a;">—</td>
+                    </tr>
+                    <tr>
+                        <td style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">მძღოლი:</td>
+                        <td id="pdfDriverName" style="border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 600;">—</td>
+                        <td style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">მძღოლის ტელეფონი:</td>
+                        <td id="pdfDriverPhone" style="border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 600;">—</td>
+                    </tr>
+                    <tr>
+                        <td style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">ლუქის ნომერი / ნომრები:</td>
+                        <td id="pdfSealNumber" colspan="3" style="border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 800; color: #0f172a;">—</td>
+                    </tr>
+                </table>
+
+                <!-- Checklist Table -->
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #1e293b; color: #ffffff;">
+                            <th style="border: 1px solid #1e293b; padding: 6px 8px; text-align: left; width: 45%;">შესამოწმებელი კომპონენტი</th>
+                            <th style="border: 1px solid #1e293b; padding: 6px 8px; text-align: center; width: 22%;">სტატუსი</th>
+                            <th style="border: 1px solid #1e293b; padding: 6px 8px; text-align: left; width: 33%;">აღწერა / სტანდარტი</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 700;">1. ტენტის მდგომარეობა</td>
+                            <td id="pdfChkTenti" style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-weight: 800;">კი (წესრიგშია)</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 5px 8px; color: #475569; font-size: 10px;">მთელია / დაზიანების გარეშე</td>
+                        </tr>
+                        <tr style="background: #f8fafc;">
+                            <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 700;">2. ლუქის მდგომარეობა</td>
+                            <td id="pdfChkLuqi" style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-weight: 800;">კი (წესრიგშია)</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 5px 8px; color: #475569; font-size: 10px;">დაუზიანებელია / სწორად დევს</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 700;">3. ტროსის მდგომარეობა</td>
+                            <td id="pdfChkTrosi" style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-weight: 800;">კი (წესრიგშია)</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 5px 8px; color: #475569; font-size: 10px;">მთელია / გადაბმის გარეშე</td>
+                        </tr>
+                        <tr style="background: #f8fafc;">
+                            <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 700;">4. ბორტის მდგომარეობა</td>
+                            <td id="pdfChkBorti" style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-weight: 800;">კი (წესრიგშია)</td>
+                            <td style="border: 1px solid #cbd5e1; padding: 5px 8px; color: #475569; font-size: 10px;">დაზიანების გარეშე / იკეტება</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Notes Box -->
+                <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; background: #fffbeb; font-size: 10.5px;">
+                    <strong style="color: #92400e;">დამატებითი შენიშვნა / დაზიანების აღწერა:</strong>
+                    <span id="pdfNotes" style="color: #1e293b; margin-left: 5px;">შენიშვნების გარეშე</span>
+                </div>
+
+                <!-- Photo Section Heading (Photos themselves are drawn directly onto jsPDF for 100% camera sharpness) -->
+                <div id="pdfPhotosHeading" style="font-size: 11px; font-weight: 800; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; margin-bottom: 6px;">
+                    ფოტოფიქსაცია (გარეგანი დათვალიერების ფოტოები)
+                </div>
+            </div>
+
+            <!-- Middle Reserved Area for Direct High-Res Photo Grid (y ~ 148mm to 245mm) -->
+            <div style="flex: 1;"></div>
+
+            <!-- Bottom Inspector Signature Block -->
+            <div style="border-top: 2px solid #1e293b; padding-top: 8px; display: flex; justify-content: space-between; align-items: flex-end;">
+                <div style="font-size: 11px;">
+                    <div style="color: #64748b; font-size: 9.5px; text-transform: uppercase; font-weight: 700;">დათვალიერება ჩაატარა / პასუხისმგებელი პირი:</div>
+                    <div id="pdfInspectorName" style="font-size: 13px; font-weight: 800; color: #0f172a; margin-top: 2px;">—</div>
+                    <div id="pdfInspectorPos" style="font-size: 10.5px; color: #475569;">Gebrüder Weiss</div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 10.5px; font-weight: 700; color: #475569;">ხელმოწერა:</span>
+                    <div style="width: 145px; height: 48px; border-bottom: 1.5px solid #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        <img id="pdfSignatureImg" src="" alt="" style="max-height: 44px; max-width: 140px; object-fit: contain; display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            'use strict';
+
+            var STORAGE_KEY = 'gw_inspection_settings_v2';
+            var DEFAULT_ROUTES = ['GESWIETBI', 'GESSTBTBI', 'GESSILTBI'];
+
+            var settings = {
+                inspectorName: '',
+                inspectorPos: '',
+                recipientEmail: '',
+                logoDataUrl: '',
+                signatureDataUrl: '',
+                routes: DEFAULT_ROUTES.slice()
+            };
+
+            var selectedVehicleType = 'ტენტი';
+            var checkStatus = {
+                tenti: 'კი',
+                luqi: 'კი',
+                trosi: 'კი',
+                borti: 'კი'
+            };
+
+            // Each item: { dataUrl, width, height }
+            var uploadedPhotos = [];
+
+            // Signature Canvas state
+            var sigCanvas = document.getElementById('signatureCanvas');
+            var sigCtx = sigCanvas ? sigCanvas.getContext('2d') : null;
+            var isDrawing = false;
+            var sigModified = false;
+
+            // --- Toast Notification Helper ---
+            var toastTimer = null;
+            function showToast(message) {
+                var box = document.getElementById('toastBox');
+                var text = document.getElementById('toastText');
+                if (!box || !text) return;
+                text.textContent = message;
+                box.classList.remove('hidden');
+                if (toastTimer) clearTimeout(toastTimer);
+                toastTimer = setTimeout(function () {
+                    box.classList.add('hidden');
+                }, 3500);
+            }
+
+            document.getElementById('closeToastBtn').addEventListener('click', function () {
+                document.getElementById('toastBox').classList.add('hidden');
+            });
+
+            // --- Load & Save Settings ---
+            function loadSettings() {
+                try {
+                    var raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        var parsed = JSON.parse(raw);
+                        if (parsed && typeof parsed === 'object') {
+                            settings.inspectorName = parsed.inspectorName || '';
+                            settings.inspectorPos = parsed.inspectorPos || '';
+                            settings.recipientEmail = parsed.recipientEmail || '';
+                            settings.logoDataUrl = parsed.logoDataUrl || '';
+                            settings.signatureDataUrl = parsed.signatureDataUrl || '';
+                            if (Array.isArray(parsed.routes) && parsed.routes.length > 0) {
+                                settings.routes = parsed.routes;
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Could not read localStorage:', err);
+                }
+            }
+
+            function saveSettingsToStorage() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+                    return true;
+                } catch (err) {
+                    showToast('შენახვის შეცდომა: სურათი ძალიან დიდია');
+                    return false;
+                }
+            }
+
+            function syncSettingsToUI() {
+                // Header Logo
+                var headerLogoBox = document.getElementById('headerLogoBox');
+                var cfgLogoPreview = document.getElementById('cfgLogoPreview');
+                if (settings.logoDataUrl) {
+                    headerLogoBox.innerHTML = '<img src="' + settings.logoDataUrl + '" alt="Logo" class="h-full w-auto object-contain">';
+                    cfgLogoPreview.innerHTML = '<img src="' + settings.logoDataUrl + '" alt="Logo" class="h-full w-auto object-contain">';
+                } else {
+                    headerLogoBox.innerHTML = '<div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full gw-orange inline-block"></span><span class="font-extrabold text-slate-900 text-sm tracking-tight">Gebrüder Weiss</span></div>';
+                    cfgLogoPreview.innerHTML = '<span class="font-extrabold text-xs text-slate-800">Gebrüder Weiss</span>';
+                }
+
+                // Summary Card
+                var sumName = document.getElementById('summaryInspectorName');
+                var sumEmail = document.getElementById('summaryRecipientEmail');
+                var sumSig = document.getElementById('summarySigImg');
+                var sumNoSig = document.getElementById('summaryNoSig');
+                var setupReminder = document.getElementById('setupReminder');
+
+                if (settings.inspectorName) {
+                    sumName.textContent = settings.inspectorName + (settings.inspectorPos ? ' (' + settings.inspectorPos + ')' : '');
+                } else {
+                    sumName.textContent = 'არ არის მითითებული';
+                }
+
+                sumEmail.textContent = settings.recipientEmail ? ('მეილი: ' + settings.recipientEmail) : 'მეილი: არ არის მითითებული';
+
+                if (settings.signatureDataUrl) {
+                    sumSig.src = settings.signatureDataUrl;
+                    sumSig.classList.remove('hidden');
+                    sumNoSig.classList.add('hidden');
+                } else {
+                    sumSig.classList.add('hidden');
+                    sumNoSig.classList.remove('hidden');
+                }
+
+                if (!settings.inspectorName || !settings.signatureDataUrl) {
+                    setupReminder.classList.remove('hidden');
+                } else {
+                    setupReminder.classList.add('hidden');
+                }
+
+                // Populate Settings Inputs
+                document.getElementById('cfgInspectorName').value = settings.inspectorName;
+                document.getElementById('cfgInspectorPos').value = settings.inspectorPos;
+                document.getElementById('cfgRecipientEmail').value = settings.recipientEmail;
+
+                renderRoutesDropdown();
+                renderRoutesManagerList();
+            }
+
+            // --- Routes Management ---
+            function renderRoutesDropdown() {
+                var select = document.getElementById('selectDirection');
+                var prev = select.value;
+                select.innerHTML = '';
+                settings.routes.forEach(function (route) {
+                    var opt = document.createElement('option');
+                    opt.value = route;
+                    opt.textContent = route;
+                    select.appendChild(opt);
+                });
+                if (settings.routes.indexOf(prev) !== -1) {
+                    select.value = prev;
+                }
+            }
+
+            function renderRoutesManagerList() {
+                var container = document.getElementById('cfgRoutesList');
+                container.innerHTML = '';
+                settings.routes.forEach(function (route, idx) {
+                    var badge = document.createElement('span');
+                    badge.className = 'inline-flex items-center space-x-1.5 bg-slate-100 border border-slate-300 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800';
+                    var label = document.createElement('span');
+                    label.textContent = route;
+                    badge.appendChild(label);
+
+                    if (settings.routes.length > 1) {
+                        var delBtn = document.createElement('button');
+                        delBtn.type = 'button';
+                        delBtn.className = 'text-slate-400 hover:text-red-600 ml-1 px-1';
+                        delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                        delBtn.addEventListener('click', function () {
+                            settings.routes.splice(idx, 1);
+                            renderRoutesManagerList();
+                            renderRoutesDropdown();
+                        });
+                        badge.appendChild(delBtn);
+                    }
+                    container.appendChild(badge);
+                });
+            }
+
+            document.getElementById('addRouteBtn').addEventListener('click', function () {
+                var inp = document.getElementById('newRouteInput');
+                var val = inp.value.trim().toUpperCase().replace(/\s+/g, '');
+                if (!val) return;
+                if (settings.routes.indexOf(val) === -1) {
+                    settings.routes.push(val);
+                    renderRoutesManagerList();
+                    renderRoutesDropdown();
+                }
+                inp.value = '';
+            });
+
+            // --- Settings Modal Open/Close ---
+            function openSettingsModal() {
+                var modal = document.getElementById('settingsModal');
+                modal.classList.remove('hidden');
+                setTimeout(function () {
+                    initSignaturePadDimensions();
+                    if (settings.signatureDataUrl && sigCtx) {
+                        var img = new Image();
+                        img.onload = function () {
+                            sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+                            sigCtx.drawImage(img, 0, 0, sigCanvas.width, sigCanvas.height);
+                        };
+                        img.src = settings.signatureDataUrl;
+                    }
+                }, 40);
+            }
+
+            function closeSettingsModal() {
+                document.getElementById('settingsModal').classList.add('hidden');
+            }
+
+            document.getElementById('openSettingsBtn').addEventListener('click', openSettingsModal);
+            document.getElementById('reminderSettingsBtn').addEventListener('click', openSettingsModal);
+            document.getElementById('closeSettingsBtn').addEventListener('click', closeSettingsModal);
+
+            // --- Signature Pad Logic ---
+            function initSignaturePadDimensions() {
+                if (!sigCanvas) return;
+                var rect = sigCanvas.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    sigCanvas.width = Math.round(rect.width * 2);
+                    sigCanvas.height = Math.round(rect.height * 2);
+                }
+            }
+
+            function getCanvasCoords(evt) {
+                var rect = sigCanvas.getBoundingClientRect();
+                var clientX = evt.touches && evt.touches.length > 0 ? evt.touches[0].clientX : evt.clientX;
+                var clientY = evt.touches && evt.touches.length > 0 ? evt.touches[0].clientY : evt.clientY;
+                return {
+                    x: (clientX - rect.left) * (sigCanvas.width / rect.width),
+                    y: (clientY - rect.top) * (sigCanvas.height / rect.height)
+                };
+            }
+
+            if (sigCanvas && sigCtx) {
+                sigCanvas.addEventListener('mousedown', function (e) {
+                    isDrawing = true;
+                    sigModified = true;
+                    var pt = getCanvasCoords(e);
+                    sigCtx.beginPath();
+                    sigCtx.moveTo(pt.x, pt.y);
+                });
+
+                sigCanvas.addEventListener('mousemove', function (e) {
+                    if (!isDrawing) return;
+                    var pt = getCanvasCoords(e);
+                    sigCtx.lineTo(pt.x, pt.y);
+                    sigCtx.strokeStyle = '#0f172a';
+                    sigCtx.lineWidth = 3.5;
+                    sigCtx.lineCap = 'round';
+                    sigCtx.lineJoin = 'round';
+                    sigCtx.stroke();
+                });
+
+                window.addEventListener('mouseup', function () {
+                    isDrawing = false;
+                });
+
+                sigCanvas.addEventListener('touchstart', function (e) {
+                    e.preventDefault();
+                    isDrawing = true;
+                    sigModified = true;
+                    var pt = getCanvasCoords(e);
+                    sigCtx.beginPath();
+                    sigCtx.moveTo(pt.x, pt.y);
+                }, { passive: false });
+
+                sigCanvas.addEventListener('touchmove', function (e) {
+                    e.preventDefault();
+                    if (!isDrawing) return;
+                    var pt = getCanvasCoords(e);
+                    sigCtx.lineTo(pt.x, pt.y);
+                    sigCtx.strokeStyle = '#0f172a';
+                    sigCtx.lineWidth = 3.5;
+                    sigCtx.lineCap = 'round';
+                    sigCtx.lineJoin = 'round';
+                    sigCtx.stroke();
+                }, { passive: false });
+
+                sigCanvas.addEventListener('touchend', function () {
+                    isDrawing = false;
+                });
+            }
+
+            document.getElementById('clearSignatureBtn').addEventListener('click', function () {
+                if (sigCtx && sigCanvas) {
+                    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+                }
+                settings.signatureDataUrl = '';
+                sigModified = false;
+            });
+
+            // Logo Upload in Settings
+            document.getElementById('uploadLogoTriggerBtn').addEventListener('click', function () {
+                document.getElementById('hiddenLogoInput').click();
+            });
+
+            document.getElementById('hiddenLogoInput').addEventListener('change', function (e) {
+                var file = e.target.files && e.target.files[0];
+                if (!file) return;
+                processImageToCanvas(file, 450, 0.9, function (result) {
+                    settings.logoDataUrl = result.dataUrl;
+                    document.getElementById('cfgLogoPreview').innerHTML = '<img src="' + result.dataUrl + '" alt="Logo" class="h-full w-auto object-contain">';
+                    showToast('ლოგო აიტვირთა');
+                });
+                e.target.value = '';
+            });
+
+            document.getElementById('resetLogoBtn').addEventListener('click', function () {
+                settings.logoDataUrl = '';
+                document.getElementById('cfgLogoPreview').innerHTML = '<span class="font-extrabold text-xs text-slate-800">Gebrüder Weiss</span>';
+            });
+
+            // Save Settings Button
+            document.getElementById('saveSettingsBtn').addEventListener('click', function () {
+                settings.inspectorName = document.getElementById('cfgInspectorName').value.trim();
+                settings.inspectorPos = document.getElementById('cfgInspectorPos').value.trim();
+                settings.recipientEmail = document.getElementById('cfgRecipientEmail').value.trim();
+
+                if (sigModified && sigCanvas) {
+                    settings.signatureDataUrl = sigCanvas.toDataURL('image/png');
+                    sigModified = false;
+                }
+
+                if (saveSettingsToStorage()) {
+                    syncSettingsToUI();
+                    closeSettingsModal();
+                    showToast('პარამეტრები შენახულია!');
+                }
+            });
+
+            // --- Main Form Controls ---
+            var dateTimeManuallyChanged = false;
+            var dateTimeInput = document.getElementById('inputDateTime');
+            dateTimeInput.addEventListener('change', function () {
+                dateTimeManuallyChanged = true;
+            });
+
+            function setDefaultDateTime() {
+                var now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                dateTimeInput.value = now.toISOString().slice(0, 16);
+                dateTimeManuallyChanged = false;
+            }
+
+            // Vehicle Type Selection
+            var vtypeButtons = document.querySelectorAll('.vtype-option');
+            vtypeButtons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    selectedVehicleType = btn.getAttribute('data-vtype');
+                    document.getElementById('containerNumberWrap').classList.toggle('hidden', selectedVehicleType !== 'კონტეინერი');
+                    vtypeButtons.forEach(function (b) {
+                        if (b.getAttribute('data-vtype') === selectedVehicleType) {
+                            b.className = 'vtype-option py-2.5 px-2 rounded-xl border-2 border-orange-500 bg-orange-50 text-orange-700 font-bold text-xs sm:text-sm flex flex-col items-center justify-center gap-1 transition';
+                        } else {
+                            b.className = 'vtype-option py-2.5 px-2 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-bold text-xs sm:text-sm flex flex-col items-center justify-center gap-1 transition';
+                        }
+                    });
+                });
+            });
+
+            // Plates Auto-Uppercase & Live File Name
+            function sanitizePlate(val) {
+                return (val || '').toUpperCase().replace(/[^A-Z0-9ა-ჰ]/g, '');
+            }
+
+            function getOutputFileName() {
+                var truck = sanitizePlate(document.getElementById('inputTruckPlate').value);
+                var trailer = sanitizePlate(document.getElementById('inputTrailerPlate').value);
+                var combined = truck + trailer;
+                return combined.length > 0 ? (combined + '.pdf') : 'GW_Inspection.pdf';
+            }
+
+            function updateLiveFileName() {
+                document.getElementById('liveFileName').textContent = getOutputFileName();
+            }
+
+            document.getElementById('inputTruckPlate').addEventListener('input', function () {
+                this.value = this.value.toUpperCase().replace(/\s+/g, '');
+                updateLiveFileName();
+            });
+
+            document.getElementById('inputTrailerPlate').addEventListener('input', function () {
+                this.value = this.value.toUpperCase().replace(/\s+/g, '');
+                updateLiveFileName();
+            });
+
+            document.getElementById('inputSealNumber').addEventListener('input', function () {
+                this.value = this.value.toUpperCase();
+            });
+
+            document.getElementById('inputContainerNumber').addEventListener('input', function () {
+                this.value = this.value.toUpperCase().replace(/\\s+/g, '');
+            });
+
+            // Checklist Ki / Ara Toggles
+            var checklistGroups = document.querySelectorAll('#checklistRows [data-item]');
+            checklistGroups.forEach(function (group) {
+                var itemKey = group.getAttribute('data-item');
+                var btns = group.querySelectorAll('.chk-btn');
+                btns.forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        var val = btn.getAttribute('data-val');
+                        checkStatus[itemKey] = val;
+                        btns.forEach(function (b) {
+                            var bVal = b.getAttribute('data-val');
+                            if (bVal === val) {
+                                if (val === 'კი') {
+                                    b.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition';
+                                } else {
+                                    b.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-red-600 bg-red-600 text-white shadow-sm transition';
+                                }
+                            } else {
+                                b.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition';
+                            }
+                        });
+                    });
+                });
+            });
+
+            // Reset Form Button
+            document.getElementById('resetFormBtn').addEventListener('click', function () {
+                document.getElementById('inputTruckPlate').value = '';
+                document.getElementById('inputTrailerPlate').value = '';
+                document.getElementById('inputContainerNumber').value = '';
+                document.getElementById('inputSealNumber').value = '';
+                document.getElementById('inputDriverName').value = '';
+                document.getElementById('inputDriverPhone').value = '';
+                document.getElementById('inputNotes').value = '';
+                uploadedPhotos = [];
+                renderPhotoThumbnails();
+                setDefaultDateTime();
+                updateLiveFileName();
+
+                // Reset Vehicle Type to ტენტი
+                vtypeButtons[0].click();
+
+                // Reset all checklist items to კი
+                checklistGroups.forEach(function (group) {
+                    var yesBtn = group.querySelector('.chk-btn[data-val="კი"]');
+                    if (yesBtn) yesBtn.click();
+                });
+
+                showToast('ფორმა გასუფთავდა');
+            });
+
+            // --- High-Resolution Photo Uploader ---
+            function processImageToCanvas(file, maxDim, quality, callback) {
+                var reader = new FileReader();
+                reader.onload = function (evt) {
+                    var img = new Image();
+                    img.onload = function () {
+                        var w = img.naturalWidth || img.width;
+                        var h = img.naturalHeight || img.height;
+
+                        if (w > h) {
+                            if (w > maxDim) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                            }
+                        } else {
+                            if (h > maxDim) {
+                                w = Math.round((w * maxDim) / h);
+                                h = maxDim;
+                            }
+                        }
+
+                        var canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        var ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        var dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        callback({ dataUrl: dataUrl, width: w, height: h });
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            var triggerPhotoBtn = document.getElementById('triggerPhotoInputBtn');
+            var hiddenPhotoInput = document.getElementById('hiddenPhotoInput');
+
+            triggerPhotoBtn.addEventListener('click', function () {
+                if (uploadedPhotos.length >= 4) {
+                    showToast('მაქსიმუმ 4 ფოტოს დამატებაა შესაძლებელი');
+                    return;
+                }
+                hiddenPhotoInput.click();
+            });
+
+            hiddenPhotoInput.addEventListener('change', function (e) {
+                var files = Array.prototype.slice.call(e.target.files || []);
+                if (files.length === 0) return;
+
+                var slotsLeft = 4 - uploadedPhotos.length;
+                if (slotsLeft <= 0) {
+                    showToast('მაქსიმუმ 4 ფოტოს დამატებაა შესაძლებელი');
+                    e.target.value = '';
+                    return;
+                }
+
+                var toProcess = files.slice(0, slotsLeft);
+                toProcess.forEach(function (file) {
+                    // Preserve high-resolution photos with minimal JPEG quality loss
+                    processImageToCanvas(file, 3200, 0.98, function (photoObj) {
+                        if (uploadedPhotos.length < 4) {
+                            uploadedPhotos.push(photoObj);
+                            renderPhotoThumbnails();
+                        }
+                    });
+                });
+
+                e.target.value = '';
+            });
+
+            function renderPhotoThumbnails() {
+                var grid = document.getElementById('photoThumbnailsGrid');
+                var counter = document.getElementById('photoCounterBadge');
+                counter.textContent = uploadedPhotos.length + ' / 4';
+
+                if (uploadedPhotos.length >= 4) {
+                    triggerPhotoBtn.classList.add('hidden');
+                } else {
+                    triggerPhotoBtn.classList.remove('hidden');
+                }
+
+                if (uploadedPhotos.length === 0) {
+                    grid.classList.add('hidden');
+                    grid.innerHTML = '';
+                    return;
+                }
+
+                grid.classList.remove('hidden');
+                grid.innerHTML = '';
+
+                uploadedPhotos.forEach(function (photo, index) {
+                    var card = document.createElement('div');
+                    card.className = 'relative rounded-xl overflow-hidden border border-slate-200 aspect-[4/3] bg-slate-100 shadow-sm flex items-center justify-center';
+
+                    var img = document.createElement('img');
+                    img.src = photo.dataUrl;
+                    img.alt = 'ფოტო ' + (index + 1);
+                    img.className = 'max-w-full max-h-full object-contain';
+                    card.appendChild(img);
+
+                    var tag = document.createElement('span');
+                    tag.className = 'absolute bottom-1.5 left-1.5 bg-slate-900/75 text-white text-[10px] font-bold px-2 py-0.5 rounded-md';
+                    tag.textContent = 'ფოტო #' + (index + 1);
+                    card.appendChild(tag);
+
+                    var delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.className = 'absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center text-sm font-bold shadow-md active:scale-90';
+                    delBtn.innerHTML = '&times;';
+                    delBtn.addEventListener('click', function () {
+                        uploadedPhotos.splice(index, 1);
+                        renderPhotoThumbnails();
+                    });
+                    card.appendChild(delBtn);
+
+                    grid.appendChild(card);
+                });
+            }
+
+            // --- Populate A4 Sheet & Generate Crisp Single-Page PDF ---
+            function fillA4SheetData() {
+                if (!dateTimeManuallyChanged) {
+                    setDefaultDateTime();
+                }
+                var logoSlot = document.getElementById('pdfLogoSlot');
+                if (settings.logoDataUrl) {
+                    logoSlot.innerHTML = '<img src="' + settings.logoDataUrl + '" style="max-height: 36px; max-width: 170px; object-fit: contain;">';
+                } else {
+                    logoSlot.innerHTML = '<div style="display: flex; align-items: center; gap: 8px; background: #f37021; color: #ffffff; padding: 5px 12px; border-radius: 4px;"><span style="font-size: 16px; font-weight: 800; letter-spacing: -0.3px;">Gebrüder Weiss</span><span style="width: 12px; height: 12px; border: 2px solid #ffffff; border-radius: 50%; display: inline-block;"></span></div>';
+                }
+
+                var dtVal = document.getElementById('inputDateTime').value;
+                var formattedDt = '—';
+                if (dtVal) {
+                    var d = new Date(dtVal);
+                    var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+                    formattedDt = pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                }
+                document.getElementById('pdfDateTime').textContent = formattedDt;
+                document.getElementById('pdfDirection').textContent = document.getElementById('selectDirection').value || '—';
+                document.getElementById('pdfVehicleType').textContent = selectedVehicleType;
+
+                document.getElementById('pdfTruckPlate').textContent = document.getElementById('inputTruckPlate').value.trim() || '—';
+                document.getElementById('pdfTrailerPlate').textContent = document.getElementById('inputTrailerPlate').value.trim() || '—';
+                document.getElementById('pdfContainerNumber').textContent = document.getElementById('inputContainerNumber').value.trim() || '—';
+                document.getElementById('pdfContainerRow').style.display = selectedVehicleType === 'კონტეინერი' ? 'table-row' : 'none';
+                document.getElementById('pdfDriverName').textContent = document.getElementById('inputDriverName').value.trim() || '—';
+                document.getElementById('pdfDriverPhone').textContent = document.getElementById('inputDriverPhone').value.trim() || '—';
+                document.getElementById('pdfSealNumber').textContent = document.getElementById('inputSealNumber').value.trim() || '—';
+
+                function applyStatusBadge(elId, val) {
+                    var el = document.getElementById(elId);
+                    if (val === 'კი') {
+                        el.innerHTML = '<span style="background: #dcfce7; color: #166534; padding: 2px 10px; border-radius: 4px; border: 1px solid #86efac;">კი (წესრიგშია)</span>';
+                    } else {
+                        el.innerHTML = '<span style="background: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 4px; border: 1px solid #fca5a5;">არა (დაზიანებულია)</span>';
+                    }
+                }
+
+                applyStatusBadge('pdfChkTenti', checkStatus.tenti);
+                applyStatusBadge('pdfChkLuqi', checkStatus.luqi);
+                applyStatusBadge('pdfChkTrosi', checkStatus.trosi);
+                applyStatusBadge('pdfChkBorti', checkStatus.borti);
+
+                var notesVal = document.getElementById('inputNotes').value.trim();
+                document.getElementById('pdfNotes').textContent = notesVal || 'შენიშვნების გარეშე';
+
+                var photosHeading = document.getElementById('pdfPhotosHeading');
+                photosHeading.style.display = uploadedPhotos.length > 0 ? 'block' : 'none';
+
+                document.getElementById('pdfInspectorName').textContent = settings.inspectorName || '—';
+                document.getElementById('pdfInspectorPos').textContent = settings.inspectorPos || 'Gebrüder Weiss';
+
+                var pdfSigImg = document.getElementById('pdfSignatureImg');
+                if (settings.signatureDataUrl) {
+                    pdfSigImg.src = settings.signatureDataUrl;
+                    pdfSigImg.style.display = 'block';
+                } else {
+                    pdfSigImg.style.display = 'none';
+                }
+            }
+
+            function createA4PdfBlob() {
+                return new Promise(function (resolve, reject) {
+                    if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+                        reject(new Error('PDF ბიბლიოთეკები ჯერ იტვირთება, სცადეთ რამდენიმე წამში'));
+                        return;
+                    }
+
+                    fillA4SheetData();
+                    var sheet = document.getElementById('a4-sheet');
+
+                    window.html2canvas(sheet, {
+                        scale: 3,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    }).then(function (baseCanvas) {
+                        var jsPDFConstructor = window.jspdf.jsPDF;
+                        var pdf = new jsPDFConstructor({
+                            orientation: 'portrait',
+                            unit: 'mm',
+                            format: 'a4'
+                        });
+
+                        var baseImgData = baseCanvas.toDataURL('image/jpeg', 0.96);
+                        pdf.addImage(baseImgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+
+                        // Draw each uploaded photo directly onto jsPDF in a clean 2x2 grid (y: 148mm..245mm)
+                        // Preserves exact aspect ratio and full 2200px camera resolution (no stretching, crisp zoom)
+                        if (uploadedPhotos.length > 0) {
+                            var startX = 14; // mm
+                            var startY = 149; // mm
+                            var cellW = 88; // mm
+                            var cellH = 44; // mm
+                            var gapX = 6; // mm
+                            var gapY = 5; // mm
+
+                            uploadedPhotos.forEach(function (photo, idx) {
+                                var col = idx % 2;
+                                var row = Math.floor(idx / 2);
+
+                                var boxX = startX + col * (cellW + gapX);
+                                var boxY = startY + row * (cellH + gapY);
+
+                                // Subtle cell border
+                                pdf.setDrawColor(226, 232, 240); // #e2e8f0
+                                pdf.setLineWidth(0.3);
+                                pdf.rect(boxX, boxY, cellW, cellH);
+
+                                // Mathematical aspect-fit inside cell with 1mm inner margin
+                                var pad = 1;
+                                var maxW = cellW - pad * 2;
+                                var maxH = cellH - pad * 2;
+                                var ratio = photo.width / photo.height;
+
+                                var drawW, drawH;
+                                if (ratio > (maxW / maxH)) {
+                                    drawW = maxW;
+                                    drawH = maxW / ratio;
+                                } else {
+                                    drawH = maxH;
+                                    drawW = maxH * ratio;
+                                }
+
+                                var drawX = boxX + pad + (maxW - drawW) / 2;
+                                var drawY = boxY + pad + (maxH - drawH) / 2;
+
+                                pdf.addImage(photo.dataUrl, 'JPEG', drawX, drawY, drawW, drawH, undefined, 'SLOW');
+                            });
+                        }
+
+                        var blob = pdf.output('blob');
+                        resolve(blob);
+                    }).catch(function (err) {
+                        reject(err);
+                    });
+                });
+            }
+
+            function triggerBlobDownload(blob, fileName) {
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(function () {
+                    URL.revokeObjectURL(url);
+                }, 4000);
+            }
+
+            // --- Local Inspection History / PDF Archive (IndexedDB, paginated) ---
+            var historyDbPromise = null;
+            var historyPage = 0;
+            var historyPageSize = 20;
+            var historySearchTimer = null;
+            function openHistoryDb() {
+                if (!('indexedDB' in window)) return Promise.reject(new Error('ამ ბრაუზერს ლოკალური არქივი არ აქვს'));
+                if (historyDbPromise) return historyDbPromise;
+                historyDbPromise = new Promise(function (resolve, reject) {
+                    var request = indexedDB.open('GW_Trailer_Inspection_Archive', 1);
+                    request.onupgradeneeded = function () {
+                        var db = request.result;
+                        if (!db.objectStoreNames.contains('reports')) {
+                            var store = db.createObjectStore('reports', { keyPath: 'id', autoIncrement: true });
+                            store.createIndex('createdAt', 'createdAt', { unique: false });
+                        }
+                    };
+                    request.onsuccess = function () { resolve(request.result); };
+                    request.onerror = function () { historyDbPromise = null; reject(request.error || new Error('არქივის გახსნა ვერ მოხერხდა')); };
+                });
+                return historyDbPromise;
+            }
+
+            function getHistoryMeta(fileName) {
+                var dateValue = document.getElementById('inputDateTime').value || '';
+                return { fileName:fileName, inspectionDate:dateValue, createdAt:Date.now(),
+                    truck:document.getElementById('inputTruckPlate').value.trim(),
+                    trailer:document.getElementById('inputTrailerPlate').value.trim(),
+                    container:selectedVehicleType === 'კონტეინერი' ? document.getElementById('inputContainerNumber').value.trim() : '',
+                    vehicleType:selectedVehicleType, direction:document.getElementById('selectDirection').value,
+                    inspector:settings.inspectorName || '' };
+            }
+            function saveReportToHistory(blob, fileName) {
+                return openHistoryDb().then(function (db) {
+                    return new Promise(function (resolve, reject) {
+                        var tx=db.transaction('reports','readwrite');
+                        tx.objectStore('reports').add(Object.assign(getHistoryMeta(fileName),{blob:blob}));
+                        tx.oncomplete=function(){historyPage=0;renderInspectionHistory();updateHistoryStorage();resolve();};
+                        tx.onerror=function(){reject(tx.error||new Error('PDF-ის არქივში შენახვა ვერ მოხერხდა'));};
+                        tx.onabort=function(){reject(tx.error||new Error('PDF-ის არქივში შენახვა შეწყდა'));};
+                    });
+                });
+            }
+            function formatHistoryDate(value) {
+                if(!value)return 'თარიღი მითითებული არ არის';
+                var d=new Date(value); if(isNaN(d.getTime()))return value;
+                return d.toLocaleString('ka-GE',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+            }
+            function getHistoryPage(query, page) {
+                return openHistoryDb().then(function(db){ return new Promise(function(resolve,reject){
+                    var tx=db.transaction('reports','readonly'), store=tx.objectStore('reports');
+                    var countReq=store.count(), matches=[], skip=page*historyPageSize, matched=0, total=0;
+                    countReq.onerror=function(){reject(countReq.error);};
+                    var req=store.openCursor(null,'prev');
+                    req.onsuccess=function(){
+                        var cursor=req.result;
+                        if(!cursor){resolve({items:matches,total:total});return;}
+                        var item=cursor.value;
+                        var hay=[item.fileName,item.truck,item.trailer,item.container,item.vehicleType,item.direction,item.inspector,item.inspectionDate,formatHistoryDate(item.inspectionDate)].join(' ').toLowerCase();
+                        if(!query || hay.indexOf(query)!==-1){
+                            if(matched>=skip && matches.length<historyPageSize) matches.push(item);
+                            matched++;
+                        }
+                        total=matched;
+                        cursor.continue();
+                    };
+                    req.onerror=function(){reject(req.error);};
+                });});
+            }
+            function renderInspectionHistory() {
+                var list=document.getElementById('historyList'); if(!list)return;
+                var query=(document.getElementById('historySearch').value||'').trim().toLowerCase();
+                getHistoryPage(query,historyPage).then(function(result){
+                    list.innerHTML='';
+                    document.getElementById('historyCount').textContent=result.total;
+                    var pages=Math.max(1,Math.ceil(result.total/historyPageSize));
+                    if(historyPage>=pages){historyPage=Math.max(0,pages-1);return renderInspectionHistory();}
+                    document.getElementById('historyPageLabel').textContent='გვერდი '+(historyPage+1)+' / '+pages;
+                    document.getElementById('historyPrevBtn').disabled=historyPage===0;
+                    document.getElementById('historyNextBtn').disabled=historyPage>=pages-1;
+                    if(!result.items.length){var empty=document.createElement('div');empty.className='text-center text-xs text-slate-400 py-4';empty.textContent='ჩანაწერი ვერ მოიძებნა.';list.appendChild(empty);return;}
+                    result.items.forEach(function(item){
+                        var card=document.createElement('div');card.className='border border-slate-200 rounded-xl p-3 flex items-center gap-3';
+                        var info=document.createElement('div');info.className='min-w-0 flex-1';
+                        var title=document.createElement('div');title.className='text-xs font-extrabold text-slate-800 truncate';title.textContent=(item.truck||'მანქანა —')+' / '+(item.trailer||'მისაბმელი —');
+                        var details=document.createElement('div');details.className='text-[10px] text-slate-500 mt-1';details.textContent=formatHistoryDate(item.inspectionDate)+' · '+(item.vehicleType||'')+' · '+(item.direction||'');
+                        var extra=document.createElement('div');extra.className='text-[10px] text-slate-500 mt-0.5 truncate';extra.textContent=(item.container?'კონტეინერი: '+item.container+' · ':'')+item.fileName;
+                        info.appendChild(title);info.appendChild(details);info.appendChild(extra);
+                        var actions=document.createElement('div');actions.className='flex items-center gap-1 shrink-0';
+                        var download=document.createElement('button');download.type='button';download.className='w-9 h-9 rounded-lg bg-slate-800 text-white';download.title='PDF ჩამოტვირთვა';download.innerHTML='<i class="fa-solid fa-download"></i>';
+                        download.addEventListener('click',function(){triggerBlobDownload(item.blob,item.fileName||'GW_Inspection.pdf');});
+                        var del=document.createElement('button');del.type='button';del.className='w-9 h-9 rounded-lg bg-red-50 text-red-600';del.title='ჩანაწერის წაშლა';del.innerHTML='<i class="fa-solid fa-trash"></i>';
+                        del.addEventListener('click',function(){deleteHistoryRecord(item.id);});
+                        actions.appendChild(download);actions.appendChild(del);card.appendChild(info);card.appendChild(actions);list.appendChild(card);
+                    });
+                }).catch(function(err){console.error(err);list.innerHTML='<div class="text-center text-xs text-red-500 py-3">არქივის გახსნა ვერ მოხერხდა.</div>';});
+            }
+            function deleteHistoryRecord(id){openHistoryDb().then(function(db){return new Promise(function(resolve,reject){var tx=db.transaction('reports','readwrite');tx.objectStore('reports').delete(id);tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error);};});}).then(function(){renderInspectionHistory();updateHistoryStorage();}).catch(function(){showToast('ჩანაწერის წაშლა ვერ მოხერხდა');});}
+            function updateHistoryStorage(){
+                var text=document.getElementById('historyStorageText'),bar=document.getElementById('historyStorageBar'),note=document.getElementById('historyStorageNote');
+                if(!navigator.storage||!navigator.storage.estimate){text.textContent='მიუწვდომელია';return;}
+                navigator.storage.estimate().then(function(e){var used=e.usage||0,quota=e.quota||0,pct=quota?Math.min(100,used/quota*100):0;
+                    function fmt(n){return n>=1073741824?(n/1073741824).toFixed(2)+' GB':n>=1048576?(n/1048576).toFixed(1)+' MB':(n/1024).toFixed(0)+' KB';}
+                    text.textContent=fmt(used)+' / '+(quota?fmt(quota):'—');bar.style.width=pct.toFixed(1)+'%';
+                    note.textContent='ეს არის ბრაუზერის საერთო გამოყენება და არა მხოლოდ ამ არქივის ზომა.';
+                    if(pct>80)note.textContent='ყურადღება: ბრაუზერის საცავი თითქმის შევსებულია. შექმენი სარეზერვო ZIP.';
+                }).catch(function(){text.textContent='ვერ განისაზღვრა';});
+            }
+            document.getElementById('historySearch').addEventListener('input',function(){clearTimeout(historySearchTimer);historySearchTimer=setTimeout(function(){historyPage=0;renderInspectionHistory();},250);});
+            document.getElementById('historyPrevBtn').addEventListener('click',function(){if(historyPage>0){historyPage--;renderInspectionHistory();}});
+            document.getElementById('historyNextBtn').addEventListener('click',function(){historyPage++;renderInspectionHistory();});
+            document.getElementById('clearHistoryBtn').addEventListener('click',function(){
+                if(!confirm('ნამდვილად გსურთ ყველა შენახული PDF-ისა და ისტორიის წაშლა?'))return;
+                openHistoryDb().then(function(db){return new Promise(function(resolve,reject){var tx=db.transaction('reports','readwrite');tx.objectStore('reports').clear();tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error);};});})
+                .then(function(){historyPage=0;renderInspectionHistory();updateHistoryStorage();showToast('ისტორია გასუფთავდა');}).catch(function(){showToast('ისტორიის გასუფთავება ვერ მოხერხდა');});
+            });
+            document.getElementById('backupHistoryBtn').addEventListener('click',function(){
+                var btn=this, old=btn.innerHTML;btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> მზადდება...';
+                if(typeof JSZip==='undefined'){showToast('ZIP ბიბლიოთეკა ვერ ჩაიტვირთა — შეამოწმე ინტერნეტი');btn.disabled=false;btn.innerHTML=old;return;}
+                openHistoryDb().then(function(db){return new Promise(function(resolve,reject){
+                    var zip=new JSZip(),folder=zip.folder('GW_Inspection_Backup'),csv=['ID,Date,Truck,Trailer,Container,Type,Direction,Inspector,File'];
+                    var tx=db.transaction('reports','readonly'),req=tx.objectStore('reports').openCursor();var n=0;
+                    req.onsuccess=function(){var c=req.result;if(!c){folder.file('index.csv','\uFEFF'+csv.join('\n'));zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:3}}).then(resolve).catch(reject);return;}
+                        var x=c.value, safe=(x.fileName||('inspection_'+x.id+'.pdf')).replace(/[\\/:*?"<>|]/g,'_');
+                        folder.file(String(x.id).padStart(6,'0')+'_'+safe,x.blob);csv.push([x.id,x.inspectionDate,x.truck,x.trailer,x.container,x.vehicleType,x.direction,x.inspector,safe].map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(','));n++;c.continue();};
+                    req.onerror=function(){reject(req.error);};
+                });}).then(function(blob){triggerBlobDownload(blob,'GW_Inspection_Backup_'+new Date().toISOString().slice(0,10)+'.zip');showToast('სარეზერვო ZIP მზად არის');})
+                .catch(function(err){console.error(err);showToast('სარეზერვო ასლის შექმნა ვერ მოხერხდა');})
+                .finally(function(){btn.disabled=false;btn.innerHTML=old;});
+            });
+            if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().then(function(granted){if(!granted)console.info('Persistent storage was not granted');}).catch(function(){});}
+
+            // Button 1: Direct PDF Download
+            var downloadPdfBtn = document.getElementById('downloadPdfBtn');
+            downloadPdfBtn.addEventListener('click', function () {
+                var fileName = getOutputFileName();
+                var origHtml = downloadPdfBtn.innerHTML;
+                downloadPdfBtn.disabled = true;
+                downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>მზადდება...</span>';
+
+                createA4PdfBlob().then(function (blob) {
+                    saveReportToHistory(blob, fileName).catch(function (err) { console.warn(err); showToast('PDF შეიქმნა, მაგრამ არქივში ვერ შეინახა'); });
+                    triggerBlobDownload(blob, fileName);
+                    showToast('PDF ჩამოიტვირთა: ' + fileName);
+                }).catch(function (err) {
+                    console.error(err);
+                    showToast('PDF შექმნის შეცდომა');
+                }).finally(function () {
+                    downloadPdfBtn.disabled = false;
+                    downloadPdfBtn.innerHTML = origHtml;
+                });
+            });
+
+            // Button 2: Send via Email / Mobile Share
+            var sendEmailPdfBtn = document.getElementById('sendEmailPdfBtn');
+            sendEmailPdfBtn.addEventListener('click', function () {
+                var fileName = getOutputFileName();
+                var origHtml = sendEmailPdfBtn.innerHTML;
+                sendEmailPdfBtn.disabled = true;
+                sendEmailPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>მზადდება PDF...</span>';
+
+                createA4PdfBlob().then(function (blob) {
+                    saveReportToHistory(blob, fileName).catch(function (err) { console.warn(err); showToast('PDF შეიქმნა, მაგრამ არქივში ვერ შეინახა'); });
+                    var truck = document.getElementById('inputTruckPlate').value.trim();
+                    var trailer = document.getElementById('inputTrailerPlate').value.trim();
+                    var dir = document.getElementById('selectDirection').value;
+                    var pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+
+                    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                        navigator.share({
+                            files: [pdfFile],
+                            title: 'Gebrüder Weiss - ' + fileName,
+                            text: 'ინსპექტირების აქტი: ' + truck + ' / ' + trailer + ' (' + dir + ')'
+                        }).catch(function (shareErr) {
+                            if (shareErr && shareErr.name !== 'AbortError') {
+                                fallbackDownloadAndMailto(blob, fileName, truck, trailer, dir);
+                            }
+                        });
+                    } else {
+                        fallbackDownloadAndMailto(blob, fileName, truck, trailer, dir);
+                    }
+                }).catch(function (err) {
+                    console.error(err);
+                    showToast('PDF შექმნის შეცდომა');
+                }).finally(function () {
+                    sendEmailPdfBtn.disabled = false;
+                    sendEmailPdfBtn.innerHTML = origHtml;
+                });
+            });
+
+            function fallbackDownloadAndMailto(blob, fileName, truck, trailer, dir) {
+                triggerBlobDownload(blob, fileName);
+                var recipient = encodeURIComponent(settings.recipientEmail || '');
+                var subject = encodeURIComponent('Gebrüder Weiss - ინსპექტირება: ' + truck + ' / ' + trailer + ' (' + dir + ')');
+                var body = encodeURIComponent(
+                    'გამარჯობა,\n\nგიგზავნით სატრანსპორტო საშუალების გარეგანი აღწერის აქტს (' + fileName + ').\n' +
+                    'მანქანის ნომერი: ' + truck + '\n' +
+                    'მისაბმელის ნომერი: ' + trailer + '\n' +
+                    'მიმართულება: ' + dir + '\n' +
+                    'ინსპექტორი: ' + (settings.inspectorName || '') + '\n'
+                );
+                showToast('PDF ჩამოიტვირთა, იხსნება მეილი...');
+                window.location.href = 'mailto:' + recipient + '?subject=' + subject + '&body=' + body;
+            }
+
+            // --- Initialize App ---
+            loadSettings();
+            setDefaultDateTime();
+            syncSettingsToUI();
+            updateLiveFileName();
+            renderInspectionHistory();
+            updateHistoryStorage();
+        });
+    </script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("./sw.js").catch(function (err) {
+            console.warn("Service worker registration failed:", err);
+          });
+        });
+      }
+    </script>
+</body>
+</html>
