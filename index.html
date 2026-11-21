@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+5<!DOCTYPE html>
 <html lang="ka">
 <head>
     <meta charset="UTF-8">
@@ -1517,6 +1517,7 @@
             updateHistoryStorage();
         });
     </script>
+        </script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
@@ -1526,22 +1527,96 @@
         });
       }
     </script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-analytics.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCdmaxREu-2eOSKZy5CNcA5_5lL7u3mkts",
-    authDomain: "gw-trailer-inspection.firebaseapp.com",
-    projectId: "gw-trailer-inspection",
-    storageBucket: "gw-trailer-inspection.firebasestorage.app",
-    messagingSenderId: "675018188483",
-    appId: "1:675018188483:web:2b63529e3f72cb84eca476",
-    measurementId: "G-CD8CZ6Z3L1"
-  };
+    <!-- Login Gate -->
+    <div id="auth-gate" style="position:fixed;inset:0;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;z-index:9999;font-family:sans-serif;">
+      <form id="login-form" style="background:#1f2937;padding:24px;border-radius:10px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;">
+        <h2 style="margin:0 0 6px;font-size:20px;">შესვლა</h2>
+        <input id="login-email" type="email" placeholder="ელ-ფოსტა" required style="padding:10px;border-radius:6px;border:1px solid #374151;background:#111827;color:#fff;" />
+        <input id="login-password" type="password" placeholder="პაროლი" required style="padding:10px;border-radius:6px;border:1px solid #374151;background:#111827;color:#fff;" />
+        <button type="submit" style="padding:10px;border-radius:6px;border:none;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;">შესვლა</button>
+        <p id="login-error" style="margin:0;color:#f87171;font-size:13px;min-height:18px;"></p>
+      </form>
+    </div>
+    
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-analytics.js";
+      import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+      import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyCdmaxREu-2eOSKZy5CNcA5_5lL7u3mkts",
+        authDomain: "gw-trailer-inspection.firebaseapp.com",
+        projectId: "gw-trailer-inspection",
+        storageBucket: "gw-trailer-inspection.firebasestorage.app",
+        messagingSenderId: "675018188483",
+        appId: "1:675018188483:web:2b63529e3f72cb84eca476",
+        measurementId: "G-CD8CZ6Z3L1"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      const authGate = document.getElementById("auth-gate");
+      const appContent = document.getElementById("app-content");
+      const loginForm = document.getElementById("login-form");
+      const loginError = document.getElementById("login-error");
+
+      function showGate(message = "") {
+        if (appContent) appContent.style.display = "none";
+        authGate.style.display = "flex";
+        loginError.textContent = message;
+      }
+
+      function showApp() {
+        authGate.style.display = "none";
+        if (appContent) appContent.style.display = "";
+      }
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        loginError.textContent = "";
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch (err) {
+          showGate("მეილი ან პაროლი არასწორია.");
+        }
+      });
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          showGate();
+          return;
+        }
+
+        try {
+          const snap = await getDoc(doc(db, "users", user.uid));
+          if (!snap.exists()) {
+            await signOut(auth);
+            showGate("თქვენი ანგარიში ნებადართულ სიაში არ არის.");
+            return;
+          }
+
+          const data = snap.data();
+          if (data.active !== true) {
+            await signOut(auth);
+            showGate("თქვენი ანგარიში აქტიური არ არის.");
+            return;
+          }
+
+          window.currentUserProfile = { uid: user.uid, ...data };
+          showApp();
+        } catch (err) {
+          await signOut(auth);
+          showGate("მომხმარებლის შემოწმებისას დაფიქსირდა შეცდომა.");
+        }
+      });
+    </script>
 </body>
 </html>
