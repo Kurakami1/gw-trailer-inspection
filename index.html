@@ -150,8 +150,8 @@
                     </div>
 
                     <div>
-                        <label for="selectDirection" class="block text-xs font-bold text-slate-600 mb-1">მიმართულება *</label>
-                        <select id="selectDirection" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-orange-500 bg-slate-50">
+                        <label for="selectDirection" class="block text-xs font-bold text-slate-600 mb-1 text-center">მიმართულება *</label>
+                        <select id="selectDirection" class="w-full rounded-xl border-2 border-orange-400 px-3.5 py-2.5 text-sm font-extrabold text-center text-slate-900 focus:outline-none focus:border-orange-600 bg-orange-50/40 tracking-wide">
                             <option value="GESWIETBI">GESWIETBI</option>
                             <option value="GESSTBTBI">GESSTBTBI</option>
                             <option value="GESSILTBI">GESSILTBI</option>
@@ -247,14 +247,14 @@
                 </div>
             </section>
 
-            <!-- 3. Dynamic Condition Checklist (კი / არა) -->
+            <!-- 3. Dynamic Condition Checklist (აქვს / არ აქვს) -->
             <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3.5">
                 <div class="border-b border-slate-100 pb-2.5 flex items-center justify-between">
                     <h2 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
                         <span class="w-6 h-6 rounded-lg gw-orange text-white flex items-center justify-center text-xs"><i class="fa-solid fa-clipboard-check"></i></span>
-                        <span>გარეგანი მდგომარეობა (<span id="checklistCategoryLabel" class="gw-orange-text">ტენტი</span>)</span>
+                        <span>კომპონენტების არსებობა / მდგომარეობა (<span id="checklistCategoryLabel" class="gw-orange-text">ტენტი</span>)</span>
                     </h2>
-                    <span class="text-[11px] font-semibold text-slate-400">მონიშნეთ კი / არა</span>
+                    <span class="text-[11px] font-semibold text-slate-400">აქვს / არ აქვს</span>
                 </div>
 
                 <!-- Dynamic rows rendered based on selected vehicle category -->
@@ -262,11 +262,11 @@
 
                 <div>
                     <label for="inputNotes" class="block text-xs font-bold text-slate-600 mb-1">დამატებითი შენიშვნა / დაზიანების აღწერა</label>
-                    <textarea id="inputNotes" rows="2" placeholder="მიუთითეთ თუ რომელიმე დეტალი დაზიანებულია..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:border-orange-500 bg-slate-50"></textarea>
+                    <textarea id="inputNotes" rows="2" placeholder="მიუთითეთ დაზიანების ან დამატებითი დეტალების შესახებ..." class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:outline-none focus:border-orange-500 bg-slate-50"></textarea>
                 </div>
             </section>
 
-            <!-- 4. Photo Uploader (Embedded as clickable links Foto_1.jpg.. in PDF) -->
+            <!-- 4. Photo Uploader (Permanent links Foto_1.jpg.. in PDF, single-page PDF) -->
             <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
                     <h2 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
@@ -281,7 +281,7 @@
                         <i class="fa-solid fa-camera-retro"></i>
                     </div>
                     <p class="text-sm font-bold text-slate-700">ფოტოს გადაღება ან არჩევა</p>
-                    <p class="text-xs text-slate-500 mt-0.5 text-center">PDF-ში ჩაჯდება ბმულებად (Foto_1.jpg...) და დაჭერისას გაიხსნება სრულ ზომაში</p>
+                    <p class="text-xs text-slate-500 mt-0.5 text-center">PDF-ში ჩაჯდება ბმულებად (Foto_1.jpg...) და Chrome-ში გაიხსნება ცალკე ჩანართში</p>
                 </button>
                 <input type="file" id="hiddenPhotoInput" accept="image/*" multiple class="hidden">
 
@@ -439,7 +439,7 @@
         </div>
 
         <!-- ===================================================================== -->
-        <!-- OFFSCREEN A4 DOCUMENT TEMPLATE (210mm x 297mm)                        -->
+        <!-- OFFSCREEN A4 DOCUMENT TEMPLATE (210mm x 297mm - SINGLE PAGE)          -->
         <!-- ===================================================================== -->
         <div id="a4-offscreen-host">
             <div id="a4-sheet">
@@ -459,17 +459,17 @@
                         </div>
                     </div>
 
-                    <!-- Meta Bar -->
-                    <div style="display: grid; grid-template-columns: 1.15fr 0.95fr 1.1fr; align-items: center; column-gap: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 12px; margin-bottom: 10px; font-size: 10.5px;">
+                    <!-- Meta Bar (Centered & Prominent Direction) -->
+                    <div style="display: grid; grid-template-columns: 1.1fr 1fr 1.1fr; align-items: center; column-gap: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; font-size: 10.5px;">
                         <div style="min-width: 0;">
                             <div style="color: #64748b; font-weight: 600; margin-bottom: 3px;">თარიღი / დრო:</div>
                             <strong id="pdfDateTime" style="display: block; color: #0f172a; white-space: nowrap;">—</strong>
                         </div>
-                        <div style="min-width: 0;">
-                            <div style="color: #64748b; font-weight: 600; margin-bottom: 3px;">მიმართულება:</div>
-                            <span id="pdfDirection" style="display: inline-block; min-width: 88px; box-sizing: border-box; text-align: center; background: #f37021; color: #ffffff; font-weight: 800; font-size: 10px; letter-spacing: 0.2px; padding: 3px 9px; border-radius: 4px; white-space: nowrap;">—</span>
+                        <div style="min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div style="color: #64748b; font-weight: 700; margin-bottom: 4px; text-align: center;">მიმართულება:</div>
+                            <div id="pdfDirection" style="display: flex; align-items: center; justify-content: center; min-width: 118px; box-sizing: border-box; text-align: center; background: #f37021; color: #ffffff; font-weight: 800; font-size: 12px; letter-spacing: 0.5px; padding: 5px 14px; border-radius: 6px; border: 1.5px solid #9a3412; white-space: nowrap;">—</div>
                         </div>
-                        <div style="min-width: 0;">
+                        <div style="min-width: 0; text-align: right;">
                             <div style="color: #64748b; font-weight: 600; margin-bottom: 3px;">მანქანის კატეგორია:</div>
                             <strong id="pdfVehicleType" style="display: block; color: #0f172a; white-space: nowrap;">—</strong>
                         </div>
@@ -521,10 +521,10 @@
                         <span id="pdfNotes" style="color: #1e293b; margin-left: 5px;">შენიშვნების გარეშე</span>
                     </div>
 
-                    <!-- Photo Links Box (Clickable links jumping to full-page high-res photos inside PDF) -->
-                    <div id="pdfPhotosLinkSection" style="display: none; border: 1px solid #cbd5e1; border-radius: 6px; padding: 9px 12px; background: #f8fafc;">
-                        <div style="font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
-                            ფოტოფიქსაცია (დააჭირეთ ფოტოს სახელს სრულ ზომაში გასახსნელად):
+                    <!-- Photo Links Box (Clickable URLs opening Foto_X.jpg in new tab) -->
+                    <div id="pdfPhotosLinkSection" style="display: none; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; background: #f8fafc;">
+                        <div style="font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 7px;">
+                            ფოტოფიქსაცია (დააჭირეთ ფოტოს სახელს ცალკე გვერდზე გასახსნელად):
                         </div>
                         <div id="pdfPhotoLinksContainer" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
                     </div>
@@ -583,42 +583,42 @@
             var BASE_STORAGE_KEY = 'gw_inspection_settings_v3';
             var DEFAULT_ROUTES = ['GESWIETBI', 'GESSTBTBI', 'GESSILTBI'];
 
-            // Category-specific checklist definitions
+            // Category-specific checklist definitions (აქვს / არ აქვს logic)
             var CATEGORY_CHECKLISTS = {
                 'ტენტი': [
-                    { key: 'tenti', label: '1. ტენტის მდგომარეობა', desc: 'მთელია / დაზიანების გარეშე' },
-                    { key: 'trosi', label: '2. ტენტის თოკი (ტროსი)', desc: 'მთელია / გადაბმის გარეშე' },
-                    { key: 'luqi', label: '3. ლუქის მდგომარეობა', desc: 'დაუზიანებელია / სწორად დევს' },
-                    { key: 'borti', label: '4. ბორტის მდგომარეობა', desc: 'დაზიანების გარეშე / იკეტება' }
+                    { key: 'tenti', label: '1. ტენტი', desc: 'ტენტის არსებობა და მდგომარეობა' },
+                    { key: 'trosi', label: '2. ტენტის თოკი', desc: 'ტენტის თოკის არსებობა და მდგომარეობა' },
+                    { key: 'luqi', label: '3. ლუქი', desc: 'ლუქის არსებობა და მდგომარეობა' },
+                    { key: 'borti', label: '4. ბორტი', desc: 'ბორტის არსებობა და მდგომარეობა' }
                 ],
                 'ვაგონ ტრაილერი': [
-                    { key: 'tenti', label: '1. ტენტის მდგომარეობა', desc: 'მთელია / დაზიანების გარეშე' },
-                    { key: 'trosi', label: '2. ტენტის თოკი (ტროსი)', desc: 'მთელია / გადაბმის გარეშე' },
-                    { key: 'luqi', label: '3. ლუქის მდგომარეობა', desc: 'დაუზიანებელია / სწორად დევს' },
-                    { key: 'borti', label: '4. ბორტის მდგომარეობა', desc: 'დაზიანების გარეშე / იკეტება' }
+                    { key: 'tenti', label: '1. ტენტი', desc: 'ტენტის არსებობა და მდგომარეობა' },
+                    { key: 'trosi', label: '2. ტენტის თოკი', desc: 'ტენტის თოკის არსებობა და მდგომარეობა' },
+                    { key: 'luqi', label: '3. ლუქი', desc: 'ლუქის არსებობა და მდგომარეობა' },
+                    { key: 'borti', label: '4. ბორტი', desc: 'ბორტის არსებობა და მდგომარეობა' }
                 ],
                 'მაცივარი': [
-                    { key: 'luqi', label: '1. ლუქის მდგომარეობა', desc: 'დაუზიანებელია / სწორად დევს' },
-                    { key: 'borti', label: '2. ბორტის მდგომარეობა', desc: 'დაზიანების გარეშე / იკეტება' },
-                    { key: 'side_luqi', label: '3. გვერდითი ლუქი', desc: 'დაუზიანებელია / დალუქულია' },
-                    { key: 'side_hinges', label: '4. გვერდითი ანჯამები / პეტლები', desc: 'მთელია / ფიქსირებულია' }
+                    { key: 'luqi', label: '1. ლუქი', desc: 'ლუქის არსებობა და მდგომარეობა' },
+                    { key: 'borti', label: '2. ბორტი', desc: 'ბორტის არსებობა და მდგომარეობა' },
+                    { key: 'side_luqi', label: '3. გვერდითი ლუქი', desc: 'გვერდითი ლუქის არსებობა' },
+                    { key: 'side_hinges', label: '4. გვერდითი ანჯამები / პეტლები', desc: 'გვერდითი ანჯამების/პეტლების არსებობა' }
                 ],
                 'მცირე სატვირთო (ფურგონი)': [
-                    { key: 'luqi', label: '1. ლუქის მდგომარეობა', desc: 'დაუზიანებელია / სწორად დევს' },
-                    { key: 'borti', label: '2. ბორტის მდგომარეობა', desc: 'დაზიანების გარეშე / იკეტება' },
-                    { key: 'side_luqi', label: '3. გვერდითი ლუქი', desc: 'დაუზიანებელია / დალუქულია' },
-                    { key: 'side_hinges', label: '4. გვერდითი ანჯამები / პეტლები', desc: 'მთელია / ფიქსირებულია' }
+                    { key: 'luqi', label: '1. ლუქი', desc: 'ლუქის არსებობა და მდგომარეობა' },
+                    { key: 'borti', label: '2. ბორტი', desc: 'ბორტის არსებობა და მდგომარეობა' },
+                    { key: 'side_luqi', label: '3. გვერდითი ლუქი', desc: 'გვერდითი ლუქის არსებობა' },
+                    { key: 'side_hinges', label: '4. გვერდითი ანჯამები / პეტლები', desc: 'გვერდითი ანჯამების/პეტლების არსებობა' }
                 ],
                 'მარშუტკა': [
-                    { key: 'luqi', label: '1. ლუქის მდგომარეობა', desc: 'დაუზიანებელია / სწორად დევს' },
-                    { key: 'borti', label: '2. ბორტის მდგომარეობა', desc: 'დაზიანების გარეშე / იკეტება' },
-                    { key: 'side_luqi', label: '3. გვერდითი ლუქი', desc: 'დაუზიანებელია / დალუქულია' },
-                    { key: 'side_hinges', label: '4. გვერდითი ანჯამები / პეტლები', desc: 'მთელია / ფიქსირებულია' }
+                    { key: 'luqi', label: '1. ლუქი', desc: 'ლუქის არსებობა და მდგომარეობა' },
+                    { key: 'borti', label: '2. ბორტი', desc: 'ბორტის არსებობა და მდგომარეობა' },
+                    { key: 'side_luqi', label: '3. გვერდითი ლუქი', desc: 'გვერდითი ლუქის არსებობა' },
+                    { key: 'side_hinges', label: '4. გვერდითი ანჯამები / პეტლები', desc: 'გვერდითი ანჯამების/პეტლების არსებობა' }
                 ],
                 'კონტეინერი': [
-                    { key: 'luqi', label: '1. ლუქის მდგომარეობა', desc: 'დაუზიანებელია / სწორად დევს' },
-                    { key: 'borti', label: '2. ბორტის მდგომარეობა', desc: 'დაზიანების გარეშე / იკეტება' },
-                    { key: 'container_cond', label: '3. კონტეინერის მდგომარეობა', desc: 'მთელია / კორპუსი დაუზიანებელია' }
+                    { key: 'luqi', label: '1. ლუქი', desc: 'ლუქის არსებობა და მდგომარეობა' },
+                    { key: 'borti', label: '2. ბორტი', desc: 'ბორტის არსებობა და მდგომარეობა' },
+                    { key: 'container_unit', label: '3. კონტეინერი', desc: 'კონტეინერის არსებობა და მდგომარეობა' }
                 ]
             };
 
@@ -634,7 +634,7 @@
 
             var selectedVehicleType = 'ტენტი';
             var checkStatus = {};
-            var uploadedPhotos = []; // { name, dataUrl, width, height }
+            var uploadedPhotos = []; // { name, dataUrl, width, height, url }
 
             // Signature Canvas state
             var sigCanvas = document.getElementById('signatureCanvas');
@@ -690,7 +690,6 @@
                     console.warn('Could not read localStorage:', err);
                 }
 
-                // Auto-bind authenticated user's email & Firestore profile fields if present
                 if (profile.email) {
                     settings.inspectorEmail = profile.email;
                     if (!settings.recipientEmail) {
@@ -717,7 +716,6 @@
                     if (settings.logoDataUrl) {
                         localStorage.setItem('gw_shared_company_logo', settings.logoDataUrl);
                     }
-                    // Also sync profile back to Firestore users/{uid} if hook is available
                     if (typeof window.saveUserProfileToFirestore === 'function') {
                         window.saveUserProfileToFirestore({
                             name: settings.inspectorName,
@@ -735,7 +733,6 @@
             }
 
             function syncSettingsToUI() {
-                // Header Logo
                 var headerLogoBox = document.getElementById('headerLogoBox');
                 var cfgLogoPreview = document.getElementById('cfgLogoPreview');
                 if (settings.logoDataUrl) {
@@ -746,7 +743,6 @@
                     cfgLogoPreview.innerHTML = '<span class="font-extrabold text-xs text-slate-800">Gebrüder Weiss</span>';
                 }
 
-                // Summary Card
                 var sumName = document.getElementById('summaryInspectorName');
                 var sumAccount = document.getElementById('summaryInspectorAccount');
                 var sumEmail = document.getElementById('summaryRecipientEmail');
@@ -778,7 +774,6 @@
                     setupReminder.classList.add('hidden');
                 }
 
-                // Populate Settings Inputs
                 document.getElementById('cfgUserEmailReadonly').value = settings.inspectorEmail || '—';
                 document.getElementById('cfgInspectorName').value = settings.inspectorName;
                 document.getElementById('cfgInspectorPos').value = settings.inspectorPos;
@@ -788,7 +783,6 @@
                 renderRoutesManagerList();
             }
 
-            // Expose sync hook when Firebase Auth logs in
             window.onUserAuthenticated = function () {
                 loadSettings();
                 syncSettingsToUI();
@@ -991,7 +985,7 @@
                 }
             });
 
-            // --- Dynamic Checklist Renderer ---
+            // --- Dynamic Checklist Renderer (აქვს / არ აქვს) ---
             function renderDynamicChecklist() {
                 var items = CATEGORY_CHECKLISTS[selectedVehicleType] || CATEGORY_CHECKLISTS['ტენტი'];
                 var container = document.getElementById('checklistRows');
@@ -1002,7 +996,7 @@
                 checkStatus = {};
 
                 items.forEach(function (item) {
-                    checkStatus[item.key] = 'კი';
+                    checkStatus[item.key] = 'აქვს';
 
                     var row = document.createElement('div');
                     row.className = 'flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-2';
@@ -1015,33 +1009,33 @@
                     btnGroup.className = 'flex space-x-1.5 shrink-0';
                     btnGroup.setAttribute('data-item', item.key);
 
-                    var yesBtn = document.createElement('button');
-                    yesBtn.type = 'button';
-                    yesBtn.setAttribute('data-val', 'კი');
-                    yesBtn.textContent = 'კი';
-                    yesBtn.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition';
+                    var hasBtn = document.createElement('button');
+                    hasBtn.type = 'button';
+                    hasBtn.setAttribute('data-val', 'აქვს');
+                    hasBtn.textContent = 'აქვს';
+                    hasBtn.className = 'chk-btn px-3 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition';
 
                     var noBtn = document.createElement('button');
                     noBtn.type = 'button';
-                    noBtn.setAttribute('data-val', 'არა');
-                    noBtn.textContent = 'არა';
-                    noBtn.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition';
+                    noBtn.setAttribute('data-val', 'არ აქვს');
+                    noBtn.textContent = 'არ აქვს';
+                    noBtn.className = 'chk-btn px-3 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition';
 
                     function updateButtons(selectedVal) {
                         checkStatus[item.key] = selectedVal;
-                        if (selectedVal === 'კი') {
-                            yesBtn.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition';
-                            noBtn.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition';
+                        if (selectedVal === 'აქვს') {
+                            hasBtn.className = 'chk-btn px-3 py-2 rounded-xl text-xs font-extrabold border-2 border-emerald-600 bg-emerald-600 text-white shadow-sm transition';
+                            noBtn.className = 'chk-btn px-3 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition';
                         } else {
-                            yesBtn.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition';
-                            noBtn.className = 'chk-btn px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 border-red-600 bg-red-600 text-white shadow-sm transition';
+                            hasBtn.className = 'chk-btn px-3 py-2 rounded-xl text-xs font-extrabold border-2 border-slate-300 bg-white text-slate-600 transition';
+                            noBtn.className = 'chk-btn px-3 py-2 rounded-xl text-xs font-extrabold border-2 border-amber-600 bg-amber-600 text-white shadow-sm transition';
                         }
                     }
 
-                    yesBtn.addEventListener('click', function () { updateButtons('კი'); });
-                    noBtn.addEventListener('click', function () { updateButtons('არა'); });
+                    hasBtn.addEventListener('click', function () { updateButtons('აქვს'); });
+                    noBtn.addEventListener('click', function () { updateButtons('არ აქვს'); });
 
-                    btnGroup.appendChild(yesBtn);
+                    btnGroup.appendChild(hasBtn);
                     btnGroup.appendChild(noBtn);
 
                     row.appendChild(info);
@@ -1147,7 +1141,7 @@
                 showToast('ფორმა გასუფთავდა');
             });
 
-            // --- Optimized High-Clarity Photo Uploader (Lightweight for fast email delivery) ---
+            // --- High-Clarity Photo Uploader (Uploads to Firebase Storage for Permanent Chrome-Openable Links) ---
             function processImageToCanvas(file, maxDim, quality, callback) {
                 var reader = new FileReader();
                 reader.onload = function (evt) {
@@ -1206,11 +1200,11 @@
 
                 var toProcess = files.slice(0, slotsLeft);
                 toProcess.forEach(function (file) {
-                    // 1600px @ 0.85 JPEG keeps full visual clarity on full-page view while keeping PDF size small for fast email
-                    processImageToCanvas(file, 1600, 0.85, function (photoObj) {
+                    processImageToCanvas(file, 2200, 0.92, function (photoObj) {
                         if (uploadedPhotos.length < 4) {
                             var photoIndex = uploadedPhotos.length + 1;
                             photoObj.name = 'Foto_' + photoIndex + '.jpg';
+                            photoObj.url = '';
                             uploadedPhotos.push(photoObj);
                             renderPhotoThumbnails();
                         }
@@ -1271,7 +1265,27 @@
                 });
             }
 
-            // --- Populate A4 Sheet & Generate Crisp PDF with Clickable Photo Links ---
+            function ensurePhotosUploaded() {
+                if (uploadedPhotos.length === 0) return Promise.resolve([]);
+                if (typeof window.uploadInspectionPhotoToStorage !== 'function') {
+                    return Promise.reject(new Error('Storage სერვისი არ არის მზად'));
+                }
+
+                var truck = sanitizePlate(document.getElementById('inputTruckPlate').value) || 'REPORT';
+                var tasks = uploadedPhotos.map(function (photo, idx) {
+                    var fileName = 'Foto_' + (idx + 1) + '.jpg';
+                    photo.name = fileName;
+                    if (photo.url) return Promise.resolve(photo.url);
+                    return window.uploadInspectionPhotoToStorage(photo.dataUrl, truck, fileName).then(function (downloadUrl) {
+                        photo.url = downloadUrl;
+                        return downloadUrl;
+                    });
+                });
+
+                return Promise.all(tasks);
+            }
+
+            // --- Populate A4 Sheet & Generate Single-Page PDF with Clickable Chrome Links ---
             function fillA4SheetData() {
                 if (!dateTimeManuallyChanged) {
                     setDefaultDateTime();
@@ -1312,7 +1326,7 @@
                 document.getElementById('pdfDriverPhone').textContent = document.getElementById('inputDriverPhone').value.trim() || '—';
                 document.getElementById('pdfSealNumber').textContent = document.getElementById('inputSealNumber').value.trim() || '—';
 
-                // Render Dynamic Checklist Rows in PDF Table
+                // Render Dynamic Checklist Rows in PDF Table (აქვს / არ აქვს)
                 var pdfChkBody = document.getElementById('pdfChecklistBody');
                 pdfChkBody.innerHTML = '';
                 var items = CATEGORY_CHECKLISTS[selectedVehicleType] || CATEGORY_CHECKLISTS['ტენტი'];
@@ -1321,10 +1335,10 @@
                     var tr = document.createElement('tr');
                     if (idx % 2 === 1) tr.style.background = '#f8fafc';
 
-                    var val = checkStatus[item.key] || 'კი';
-                    var badgeHtml = val === 'კი'
-                        ? '<span style="background: #dcfce7; color: #166534; padding: 2px 10px; border-radius: 4px; border: 1px solid #86efac;">კი (წესრიგშია)</span>'
-                        : '<span style="background: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 4px; border: 1px solid #fca5a5;">არა (დაზიანებულია)</span>';
+                    var val = checkStatus[item.key] || 'აქვს';
+                    var badgeHtml = val === 'აქვს'
+                        ? '<span style="background: #dcfce7; color: #166534; padding: 2px 10px; border-radius: 4px; border: 1px solid #86efac;">აქვს</span>'
+                        : '<span style="background: #fef3c7; color: #92400e; padding: 2px 10px; border-radius: 4px; border: 1px solid #fcd34d;">არ აქვს</span>';
 
                     tr.innerHTML =
                         '<td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 700;">' + item.label + '</td>' +
@@ -1348,8 +1362,8 @@
                         var fileName = 'Foto_' + (idx + 1) + '.jpg';
                         var chip = document.createElement('div');
                         chip.setAttribute('data-photo-link-idx', idx);
-                        chip.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #93c5fd; color: #1d4ed8; padding: 6px 12px; border-radius: 5px; font-size: 11px; font-weight: 700; text-decoration: underline;';
-                        chip.textContent = fileName + ' (გვერდი ' + (idx + 2) + ')';
+                        chip.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1.5px solid #60a5fa; color: #1d4ed8; padding: 6px 14px; border-radius: 5px; font-size: 11.5px; font-weight: 800; text-decoration: underline;';
+                        chip.textContent = fileName;
                         linksContainer.appendChild(chip);
                     });
                 } else {
@@ -1370,17 +1384,15 @@
             }
 
             function createA4PdfBlob() {
-                return new Promise(function (resolve, reject) {
-                    if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-                        reject(new Error('PDF ბიბლიოთეკები ჯერ იტვირთება, სცადეთ რამდენიმე წამში'));
-                        return;
-                    }
+                if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+                    return Promise.reject(new Error('PDF ბიბლიოთეკები ჯერ იტვირთება, სცადეთ რამდენიმე წამში'));
+                }
 
+                return ensurePhotosUploaded().then(function () {
                     fillA4SheetData();
                     var sheet = document.getElementById('a4-sheet');
                     var sheetRect = sheet.getBoundingClientRect();
 
-                    // Measure exact coordinates of each Foto_X.jpg chip in mm before rendering
                     var linkChips = Array.prototype.slice.call(sheet.querySelectorAll('[data-photo-link-idx]'));
                     var linkBoxesMm = linkChips.map(function (chip) {
                         var r = chip.getBoundingClientRect();
@@ -1393,8 +1405,8 @@
                         };
                     });
 
-                    window.html2canvas(sheet, {
-                        scale: 2.2,
+                    return window.html2canvas(sheet, {
+                        scale: 2.3,
                         useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false
@@ -1407,66 +1419,17 @@
                             compress: true
                         });
 
-                        // Page 1: Inspection Sheet (JPEG compressed for fast email delivery)
-                        var baseImgData = baseCanvas.toDataURL('image/jpeg', 0.90);
+                        var baseImgData = baseCanvas.toDataURL('image/jpeg', 0.92);
                         pdf.addImage(baseImgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
-                        // Add interactive internal PDF links on Page 1 jumping directly to each full-page photo
                         linkBoxesMm.forEach(function (box) {
-                            var targetPage = box.idx + 2; // Page 2, 3, 4, 5
-                            pdf.link(box.x, box.y, box.w, box.h, { pageNumber: targetPage });
+                            var photo = uploadedPhotos[box.idx];
+                            if (photo && photo.url) {
+                                pdf.link(box.x, box.y, box.w, box.h, { url: photo.url });
+                            }
                         });
 
-                        // Additional Full-Size Pages (1 photo per A4 page, no external storage required)
-                        if (uploadedPhotos.length > 0) {
-                            var truckLabel = document.getElementById('inputTruckPlate').value.trim() || '';
-                            var trailerLabel = document.getElementById('inputTrailerPlate').value.trim() || '';
-
-                            uploadedPhotos.forEach(function (photo, idx) {
-                                pdf.addPage('a4', 'portrait');
-                                var fileName = 'Foto_' + (idx + 1) + '.jpg';
-
-                                // Top bar on photo page
-                                pdf.setFillColor(30, 41, 59); // #1e293b
-                                pdf.rect(0, 0, 210, 14, 'F');
-                                pdf.setTextColor(255, 255, 255);
-                                pdf.setFontSize(11);
-                                pdf.text(fileName + '  |  ' + truckLabel + (trailerLabel ? ' / ' + trailerLabel : ''), 12, 9);
-
-                                // Clickable "Back to Page 1" button in top-right corner
-                                pdf.setFillColor(243, 112, 33); // #f37021
-                                pdf.roundedRect(156, 3, 42, 8, 1.5, 1.5, 'F');
-                                pdf.setFontSize(9);
-                                pdf.text('< Page 1 (Report)', 160, 8.5);
-                                pdf.link(156, 3, 42, 8, { pageNumber: 1 });
-
-                                // Draw full-page high-resolution photo preserving aspect ratio
-                                var marginX = 10;
-                                var marginY = 18;
-                                var availW = 210 - marginX * 2;
-                                var availH = 297 - marginY - 12;
-                                var ratio = photo.width / photo.height;
-
-                                var drawW, drawH;
-                                if (ratio > (availW / availH)) {
-                                    drawW = availW;
-                                    drawH = availW / ratio;
-                                } else {
-                                    drawH = availH;
-                                    drawW = availH * ratio;
-                                }
-
-                                var drawX = marginX + (availW - drawW) / 2;
-                                var drawY = marginY + (availH - drawH) / 2;
-
-                                pdf.addImage(photo.dataUrl, 'JPEG', drawX, drawY, drawW, drawH, undefined, 'FAST');
-                            });
-                        }
-
-                        var blob = pdf.output('blob');
-                        resolve(blob);
-                    }).catch(function (err) {
-                        reject(err);
+                        return pdf.output('blob');
                     });
                 });
             }
@@ -1628,7 +1591,7 @@
                 var fileName = getOutputFileName();
                 var origHtml = downloadPdfBtn.innerHTML;
                 downloadPdfBtn.disabled = true;
-                downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>მზადდება...</span>';
+                downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>იტვირთება...</span>';
 
                 createA4PdfBlob().then(function (blob) {
                     saveReportToHistory(blob, fileName).catch(function (err) { console.warn(err); });
@@ -1636,7 +1599,7 @@
                     showToast('PDF ჩამოიტვირთა: ' + fileName);
                 }).catch(function (err) {
                     console.error(err);
-                    showToast('PDF შექმნის შეცდომა');
+                    showToast('PDF შექმნის შეცდომა: ' + (err.message || ''));
                 }).finally(function () {
                     downloadPdfBtn.disabled = false;
                     downloadPdfBtn.innerHTML = origHtml;
@@ -1673,7 +1636,7 @@
                     }
                 }).catch(function (err) {
                     console.error(err);
-                    showToast('PDF შექმნის შეცდომა');
+                    showToast('PDF შექმნის შეცდომა: ' + (err.message || ''));
                 }).finally(function () {
                     sendEmailPdfBtn.disabled = false;
                     sendEmailPdfBtn.innerHTML = origHtml;
@@ -1721,6 +1684,7 @@
       import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-analytics.js";
       import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
       import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+      import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyCdmaxREu-2eOSKZy5CNcA5_5lL7u3mkts",
@@ -1736,6 +1700,7 @@
       const analytics = getAnalytics(app);
       const auth = getAuth(app);
       const db = getFirestore(app);
+      const storage = getStorage(app);
 
       const authGate = document.getElementById("auth-gate");
       const appContent = document.getElementById("app-content");
@@ -1759,6 +1724,14 @@
           await signOut(auth);
         });
       }
+
+      window.uploadInspectionPhotoToStorage = async (dataUrl, folderPrefix, fileName) => {
+        const uid = auth.currentUser ? auth.currentUser.uid : "anon";
+        const uniquePath = `inspections/${uid}/${folderPrefix}_${Date.now()}_${fileName}`;
+        const storageRef = ref(storage, uniquePath);
+        await uploadString(storageRef, dataUrl, "data_url", { contentType: "image/jpeg" });
+        return await getDownloadURL(storageRef);
+      };
 
       window.saveUserProfileToFirestore = async (profileData) => {
         if (!auth.currentUser) return;
