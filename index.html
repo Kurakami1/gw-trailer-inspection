@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#242424">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,14 +20,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { font-family: 'Noto Sans Georgian', sans-serif; background-color: #f8fafc; color: #0f172a; -webkit-tap-highlight-color: transparent; }
-        .gw-orange { background-color: #f37021; }
-        .gw-orange-text { color: #f37021; }
-        .gw-orange-border { border-color: #f37021; }
-        .gw-dark { background-color: #0f172a; }
-        #signatureCanvas { touch-action: none; cursor: crosshair; background-color: #ffffff; }
-        #a4-offscreen-host { position: fixed; left: -10000px; top: 0; width: 210mm; height: 297mm; background: #ffffff; z-index: -50; pointer-events: none; }
-        #a4-sheet { width: 210mm; height: 297mm; padding: 10mm 12mm 9mm 12mm; box-sizing: border-box; background: #ffffff; color: #0f172a; font-family: 'Noto Sans Georgian', sans-serif; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+        :root { --gw-orange:#f37021; --gw-ink:#292929; --gw-muted:#687078; --gw-line:#e5e7eb; --gw-paper:#f6f6f4; }
+        * { box-sizing:border-box; }
+        body { font-family:'Noto Sans Georgian',sans-serif; background:var(--gw-paper); color:#292929; -webkit-tap-highlight-color:transparent; }
+        .gw-orange { background-color:var(--gw-orange); }
+        .gw-orange-text { color:var(--gw-orange); }
+        .gw-orange-border { border-color:var(--gw-orange); }
+        .gw-dark { background-color:var(--gw-ink); }
+        button, input, select, textarea { font-family:inherit; }
+        button { -webkit-tap-highlight-color:transparent; }
+        input:focus, select:focus, textarea:focus { outline:none; border-color:var(--gw-orange)!important; box-shadow:0 0 0 3px rgba(243,112,33,.12); }
+        .bg-white.rounded-2xl { box-shadow:0 2px 12px rgba(25,25,25,.035); }
+        #signatureCanvas { touch-action:none; cursor:crosshair; background:#fff; }
+        #a4-offscreen-host { position:fixed; left:-10000px; top:0; width:210mm; height:297mm; background:#fff; z-index:-50; pointer-events:none; }
+        #a4-sheet { width:210mm; height:297mm; padding:10mm 12mm 9mm; box-sizing:border-box; background:#fff; color:#292929; font-family:'Noto Sans Georgian',sans-serif; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
+        .gw-orange, .gw-dark { transition:background-color .16s ease, transform .16s ease; }
+        button:disabled { opacity:.65; cursor:wait; }
+        @media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none!important; animation:none!important; } }
     </style>
 </head>
 <body class="pb-28">
@@ -167,7 +176,7 @@
                     <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-camera-retro"></i></div>
                     <div class="text-left">
                         <p class="text-xs sm:text-sm font-bold text-slate-700">ფოტოს გადაღება ან არჩევა</p>
-                        <p class="text-[10px] text-slate-400">PDF ფურცელზე იქნება მხოლოდ ნაწერის ბმული (Foto_1.jpg...) — დაჭერით ახალ გვერდზე გაიხსნება</p>
+                        <p class="text-[10px] text-slate-400">PDF-ში გამოჩნდება მხოლოდ ფოტოს ბმული — ფოტო ცალკე ფანჯარაში გაიხსნება</p>
                     </div>
                 </button>
                 <input type="file" id="hiddenPhotoInput" accept="image/*" multiple class="hidden">
@@ -657,7 +666,7 @@
             hiddenPhotoInput.addEventListener('change', function (e) {
                 var files = Array.prototype.slice.call(e.target.files || []).slice(0, 4 - uploadedPhotos.length);
                 files.forEach(function (f) {
-                    processImageToCanvas(f, 1600, 0.78, function (p) {
+                    processImageToCanvas(f, 2000, 0.88, function (p) {
                         if (uploadedPhotos.length < 4) { p.name = 'Foto_' + (uploadedPhotos.length + 1) + '.jpg'; p.url = ''; uploadedPhotos.push(p); renderPhotoThumbnails(); }
                     });
                 });
@@ -682,12 +691,19 @@
             }
 
             function ensurePhotosUploaded() {
-                if (!uploadedPhotos.length || typeof window.uploadInspectionPhotoToStorage !== 'function') return Promise.resolve([]);
+                if (!uploadedPhotos.length) return Promise.resolve([]);
+                if (typeof window.uploadInspectionPhotoToStorage !== 'function') {
+                    return Promise.reject(new Error('ფოტოების Cloud საცავი მიუწვდომელია. გადაამოწმეთ ინტერნეტი და Firebase Storage.'));
+                }
                 var truck = sanitizePlate(document.getElementById('inputTruckPlate').value) || 'REPORT';
                 return Promise.all(uploadedPhotos.map(function (p, idx) {
                     p.name = 'Foto_' + (idx + 1) + '.jpg';
                     if (p.url) return Promise.resolve(p.url);
-                    return withTimeout(window.uploadInspectionPhotoToStorage(p.dataUrl, truck, p.name), 9000).then(function (u) { p.url = u || ''; return p.url; });
+                    return window.uploadInspectionPhotoToStorage(p.dataUrl, truck, p.name).then(function (u) {
+                        if (!u) throw new Error(p.name + ' ვერ აიტვირთა');
+                        p.url = u;
+                        return u;
+                    });
                 }));
             }
 
@@ -735,11 +751,14 @@
                 if (validPhotos.length) {
                     linksSection.style.display = 'block';
                     validPhotos.forEach(function (p, i) {
-                        var sp = document.createElement('span');
-                        sp.setAttribute('data-photo-url', p.url);
-                        sp.style.cssText = 'color: #1d4ed8; font-size: 11.5px; font-weight: 800; text-decoration: underline;';
-                        sp.textContent = p.name || ('Foto_' + (i + 1) + '.jpg');
-                        linksContainer.appendChild(sp);
+                        var link = document.createElement('a');
+                        link.setAttribute('data-photo-url', p.url);
+                        link.href = p.url;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.style.cssText = 'display:inline-block;color:#d95f18;font-size:11.5px;font-weight:800;text-decoration:underline;padding:3px 2px;';
+                        link.textContent = '↗ ' + (p.name || ('Foto_' + (i + 1) + '.jpg'));
+                        linksContainer.appendChild(link);
                     });
                 } else {
                     linksSection.style.display = 'none';
@@ -762,11 +781,15 @@
                         var r = el.getBoundingClientRect();
                         return { url: el.getAttribute('data-photo-url'), x: ((r.left - rect.left) / rect.width) * 210, y: ((r.top - rect.top) / rect.height) * 297, w: (r.width / rect.width) * 210, h: (r.height / rect.height) * 297 };
                     });
-                    return withTimeout(window.html2canvas(sheet, { scale: 1.4, useCORS: true, backgroundColor: '#ffffff', logging: false }), 12000).then(function (canvas) {
+                    return window.html2canvas(sheet, { scale: 1.35, useCORS: true, backgroundColor: '#ffffff', logging: false }).then(function (canvas) {
                         if (!canvas) throw new Error('PDF რენდერი ვერ მოესწრო');
-                        var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.8), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-                        linksMm.forEach(function (b) { if (b.url) pdf.link(b.x, b.y, b.w, b.h, { url: b.url, newWindow: true }); });
+                        var pdf = new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true, putOnlyUsedFonts:true });
+                        pdf.setProperties({ title:'Gebrüder Weiss - Inspection Report', subject:'Vehicle inspection report', creator:'GW Inspection' });
+                        // One A4 page only: photos stay in Cloud Storage and appear as clickable URL annotations.
+                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.78), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+                        linksMm.forEach(function (b) {
+                            if (b.url && b.w > 2 && b.h > 2) pdf.link(b.x, b.y, b.w, b.h, { url:b.url, newWindow:true });
+                        });
                         return pdf.output('blob');
                     });
                 });
@@ -1016,30 +1039,41 @@
             sendEmailPdfBtn.addEventListener('click', function () {
                 if (sendEmailPdfBtn.disabled) return;
                 var fileName = getOutputFileName();
-                sendEmailPdfBtn.disabled = true; sendEmailPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>მზადდება PDF...</span>';
+                sendEmailPdfBtn.disabled = true;
+                sendEmailPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>PDF და ფოტო ბმულები მზადდება...</span>';
                 createA4PdfBlob().then(function (blob) {
                     saveReportToHistory(blob, fileName).catch(function () {});
-                    triggerBlobDownload(blob, fileName);
                     var truck = document.getElementById('inputTruckPlate').value.trim();
                     var trailer = document.getElementById('inputTrailerPlate').value.trim();
                     var dir = document.getElementById('selectDirection').value;
-                    var pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+                    var pdfFile = new File([blob], fileName, { type:'application/pdf' });
 
-                    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [pdfFile] }))) {
-                        return navigator.share({ files: [pdfFile], title: 'Gebrüder Weiss - ' + fileName, text: 'ინსპექტირების აქტი: ' + truck + ' / ' + trailer + ' (' + dir + ')' }).catch(function (e) {
-                            if (e && e.name !== 'AbortError') openMailClient(fileName, truck, trailer, dir);
+                    if (navigator.share && (!navigator.canShare || navigator.canShare({ files:[pdfFile] }))) {
+                        return navigator.share({
+                            files:[pdfFile],
+                            title:'Gebrüder Weiss - ' + fileName,
+                            text:'ინსპექტირების აქტი: ' + truck + ' / ' + trailer + ' (' + dir + ')'
+                        }).then(function () {
+                            showToast('PDF გაზიარების აპლიკაციას გადაეცა');
+                        }).catch(function (e) {
+                            if (e && e.name === 'AbortError') return;
+                            triggerBlobDownload(blob, fileName);
+                            openMailClient(fileName, truck, trailer, dir);
                         });
                     }
+                    // Browsers do not allow mailto: to attach a file automatically.
+                    triggerBlobDownload(blob, fileName);
                     openMailClient(fileName, truck, trailer, dir);
-                }).catch(function (err) { showToast('შეცდომა: ' + (err && err.message ? err.message : '')); })
-                  .finally(resetActionButtons);
+                }).catch(function (err) {
+                    showToast('შეცდომა: ' + (err && err.message ? err.message : 'PDF ვერ შეიქმნა'));
+                }).finally(resetActionButtons);
             });
 
             function openMailClient(fileName, truck, trailer, dir) {
                 var to = encodeURIComponent(settings.recipientEmail || '');
                 var subj = encodeURIComponent('Gebrüder Weiss - ინსპექტირება: ' + truck + ' / ' + trailer + ' (' + dir + ')');
-                var body = encodeURIComponent('გამარჯობა,\n\nგიგზავნით სატრანსპორტო საშუალების გარეგანი აღწერის აქტს (' + fileName + ').\nმანქანის ნომერი: ' + truck + '\nმისაბმელის ნომერი: ' + trailer + '\nმძღოლი: ' + (driverNameInput.value.trim() || '—') + '\nმიმართულება: ' + dir + '\nინსპექტორი: ' + (settings.inspectorName || '') + '\n');
-                showToast('PDF ჩამოიტვირთა — მიამაგრეთ ' + fileName + ' მეილს');
+                var body = encodeURIComponent('გამარჯობა,\n\nგიგზავნით სატრანსპორტო საშუალების გარეგანი აღწერის აქტს (' + fileName + ').\nPDF ჩამოტვირთულია მოწყობილობაში — გთხოვთ, მიამაგროთ წერილს.\nმანქანის ნომერი: ' + truck + '\nმისაბმელის ნომერი: ' + trailer + '\nმძღოლი: ' + (driverNameInput.value.trim() || '—') + '\nმიმართულება: ' + dir + '\nინსპექტორი: ' + (settings.inspectorName || '') + '\n');
+                showToast('PDF ჩამოიტვირთა — მეილში ფაილი ხელით მიამაგრეთ');
                 window.location.href = 'mailto:' + to + '?subject=' + subj + '&body=' + body;
             }
 
