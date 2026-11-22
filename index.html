@@ -206,12 +206,6 @@
                     </div>
                 </div>
 
-                <!-- Second Trailer (ავტომატარებელი) -->
-                <div id="secondTrailerWrap" class="hidden">
-                    <label for="inputSecondTrailerPlate" class="block text-[11px] font-bold text-orange-700 mb-1">მეორე მისაბმელის ნომერი</label>
-                    <input type="text" id="inputSecondTrailerPlate" placeholder="BG008L" class="w-full rounded-xl border border-orange-300 px-3 py-2 text-sm font-extrabold uppercase tracking-wider focus:outline-none focus:border-orange-500 bg-orange-50/60">
-                </div>
-
                 <!-- Container Number (კონტეინერი) -->
                 <div id="containerNumberWrap" class="hidden">
                     <label for="inputContainerNumber" class="block text-[11px] font-bold text-orange-700 mb-1">კონტეინერის ნომერი *</label>
@@ -266,7 +260,7 @@
                 </div>
             </section>
 
-            <!-- 4. Photo Uploader (Clickable Foto_1.jpg.. links in 1-page PDF) -->
+            <!-- 4. Photo Uploader (Text-only link on PDF opening in new window, high clarity + compact size) -->
             <section class="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">4. ფოტოფიქსაცია (მაქს. 4)</span>
@@ -279,7 +273,7 @@
                     </div>
                     <div class="text-left">
                         <p class="text-xs sm:text-sm font-bold text-slate-700">ფოტოს გადაღება ან არჩევა</p>
-                        <p class="text-[10px] text-slate-400">PDF-ში ჩაჯდება ბმულად (Foto_1.jpg...) და Chrome-ში გაიხსნება ცალკე</p>
+                        <p class="text-[10px] text-slate-400">PDF-ზე ჩაჯდება მხოლოდ ნაწერის ბმულად (Foto_1.jpg...) და გაიხსნება ახალ ფანჯარაში</p>
                     </div>
                 </button>
                 <input type="file" id="hiddenPhotoInput" accept="image/*" multiple class="hidden">
@@ -521,10 +515,6 @@
                             <td style="width: 24%; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">მისაბმელის ნომერი:</td>
                             <td id="pdfTrailerPlate" style="width: 26%; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 800; font-size: 13px; color: #0f172a;">—</td>
                         </tr>
-                        <tr id="pdfSecondTrailerRow" style="display: none;">
-                            <td style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">მეორე მისაბმელი:</td>
-                            <td id="pdfSecondTrailerPlate" colspan="3" style="border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 800; font-size: 13px; color: #0f172a;">—</td>
-                        </tr>
                         <tr id="pdfContainerRow" style="display: none;">
                             <td style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #334155;">კონტეინერის ნომერი:</td>
                             <td id="pdfContainerNumber" colspan="3" style="border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 800; font-size: 13px; color: #0f172a;">—</td>
@@ -559,12 +549,12 @@
                         <span id="pdfNotes" style="color: #1e293b; margin-left: 5px;">შენიშვნების გარეშე</span>
                     </div>
 
-                    <!-- Photo Links Box -->
-                    <div id="pdfPhotosLinkSection" style="display: none; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; background: #f8fafc;">
-                        <div style="font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 7px;">
-                            ფოტოფიქსაცია (დააჭირეთ ფოტოს სახელს ცალკე გვერდზე გასახსნელად):
+                    <!-- Text-Only Photo Links on Page 1 (Opens in new window on click) -->
+                    <div id="pdfPhotosLinkSection" style="display: none; border: 1px solid #cbd5e1; border-radius: 6px; padding: 9px 12px; background: #f8fafc;">
+                        <div style="font-size: 10.5px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+                            ფოტო ბმულები (დააჭირეთ ნაწერს ახალ ფანჯარაში გასახსნელად):
                         </div>
-                        <div id="pdfPhotoLinksContainer" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                        <div id="pdfPhotoLinksContainer" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;"></div>
                     </div>
                 </div>
 
@@ -616,7 +606,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             'use strict';
 
-            var BASE_STORAGE_KEY = 'gw_inspection_settings_v4';
+            var BASE_STORAGE_KEY = 'gw_inspection_settings_v5';
             var DEFAULT_ROUTES = ['GESWIETBI', 'GESSTBTBI', 'GESSILTBI'];
 
             var DAMAGE_OPTIONS = [
@@ -630,7 +620,6 @@
                 'კოროზია'
             ];
 
-            // Updated 6 vehicle categories & exact components
             var CATEGORY_CHECKLISTS = {
                 'ტენტი': [
                     { key: 'tenti', label: '1. ტენტი' },
@@ -684,7 +673,6 @@
             };
 
             var selectedVehicleType = 'ტენტი';
-            // checklistState[key] = { checked: boolean, damage: string }
             var checklistState = {};
             var uploadedPhotos = []; // { name, dataUrl, width, height, url }
             var sharedInspections = [];
@@ -1018,7 +1006,7 @@
             document.getElementById('hiddenLogoInput').addEventListener('change', function (e) {
                 var file = e.target.files && e.target.files[0];
                 if (!file) return;
-                processImageToCanvas(file, 450, 0.9, function (result) {
+                processImageToCanvas(file, 450, 0.85, function (result) {
                     settings.logoDataUrl = result.dataUrl;
                     document.getElementById('cfgLogoPreview').innerHTML = '<img src="' + result.dataUrl + '" alt="Logo" class="h-full w-auto object-contain">';
                     showToast('ლოგო აიტვირთა');
@@ -1073,14 +1061,12 @@
                     var controls = document.createElement('div');
                     controls.className = 'flex items-center gap-2 shrink-0';
 
-                    // Box 1: Green Checkmark Toggle
                     var checkBtn = document.createElement('button');
                     checkBtn.type = 'button';
                     checkBtn.setAttribute('aria-label', item.label + ' მონიშვნა');
                     checkBtn.className = 'w-9 h-9 rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white flex items-center justify-center text-sm font-extrabold transition active:scale-95';
                     checkBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
 
-                    // Box 2: Damage Dropdown
                     var dmgSelect = document.createElement('select');
                     dmgSelect.className = 'rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-orange-500 max-w-[140px]';
 
@@ -1100,10 +1086,8 @@
                         var st = checklistState[item.key];
                         if (st.checked) {
                             checkBtn.className = 'w-9 h-9 rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white flex items-center justify-center text-sm font-extrabold transition active:scale-95';
-                            checkBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
                         } else {
                             checkBtn.className = 'w-9 h-9 rounded-xl border-2 border-slate-300 bg-white text-slate-300 flex items-center justify-center text-sm font-extrabold transition active:scale-95';
-                            checkBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
                         }
 
                         if (st.damage) {
@@ -1156,14 +1140,12 @@
                 dateTimeManuallyChanged = false;
             }
 
-            // Vehicle Type Selection
             var vtypeButtons = document.querySelectorAll('.vtype-option');
             vtypeButtons.forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     selectedVehicleType = btn.getAttribute('data-vtype');
 
                     document.getElementById('containerNumberWrap').classList.toggle('hidden', selectedVehicleType !== 'კონტეინერი');
-                    document.getElementById('secondTrailerWrap').classList.toggle('hidden', selectedVehicleType !== 'ავტომატარებელი');
 
                     vtypeButtons.forEach(function (b) {
                         if (b.getAttribute('data-vtype') === selectedVehicleType) {
@@ -1178,7 +1160,6 @@
                 });
             });
 
-            // Plates Auto-Uppercase & Live File Name
             function sanitizePlate(val) {
                 return (val || '').toUpperCase().replace(/[^A-Z0-9ა-ჰ]/g, '');
             }
@@ -1186,8 +1167,7 @@
             function getOutputFileName() {
                 var truck = sanitizePlate(document.getElementById('inputTruckPlate').value);
                 var trailer = sanitizePlate(document.getElementById('inputTrailerPlate').value);
-                var trailer2 = selectedVehicleType === 'ავტომატარებელი' ? sanitizePlate(document.getElementById('inputSecondTrailerPlate').value) : '';
-                var combined = truck + trailer + trailer2;
+                var combined = truck + trailer;
                 return combined.length > 0 ? (combined + '.pdf') : 'GW_Inspection.pdf';
             }
 
@@ -1205,11 +1185,6 @@
                 updateLiveFileName();
             });
 
-            document.getElementById('inputSecondTrailerPlate').addEventListener('input', function () {
-                this.value = this.value.toUpperCase().replace(/\s+/g, '');
-                updateLiveFileName();
-            });
-
             document.getElementById('inputSealNumber').addEventListener('input', function () {
                 this.value = this.value.toUpperCase();
             });
@@ -1218,7 +1193,6 @@
                 this.value = this.value.toUpperCase().replace(/\s+/g, '');
             });
 
-            // Driver Input -> Auto-fill Phone if known + Show Instant Driver Visit History
             var driverNameInput = document.getElementById('inputDriverName');
             var driverPhoneInput = document.getElementById('inputDriverPhone');
 
@@ -1235,11 +1209,9 @@
                 }
             });
 
-            // Reset Form Button
             document.getElementById('resetFormBtn').addEventListener('click', function () {
                 document.getElementById('inputTruckPlate').value = '';
                 document.getElementById('inputTrailerPlate').value = '';
-                document.getElementById('inputSecondTrailerPlate').value = '';
                 document.getElementById('inputContainerNumber').value = '';
                 document.getElementById('inputSealNumber').value = '';
                 driverNameInput.value = '';
@@ -1254,7 +1226,7 @@
                 showToast('ფორმა გასუფთავდა');
             });
 
-            // --- High-Clarity Photo Uploader ---
+            // --- High-Clarity + Compact Size Photo Processor (maxDim=1600px, quality=0.78) ---
             function processImageToCanvas(file, maxDim, quality, callback) {
                 var reader = new FileReader();
                 reader.onload = function (evt) {
@@ -1313,7 +1285,7 @@
 
                 var toProcess = files.slice(0, slotsLeft);
                 toProcess.forEach(function (file) {
-                    processImageToCanvas(file, 2200, 0.92, function (photoObj) {
+                    processImageToCanvas(file, 1600, 0.78, function (photoObj) {
                         if (uploadedPhotos.length < 4) {
                             var photoIndex = uploadedPhotos.length + 1;
                             photoObj.name = 'Foto_' + photoIndex + '.jpg';
@@ -1360,7 +1332,7 @@
                     card.appendChild(img);
 
                     var tag = document.createElement('span');
-                    tag.className = 'absolute bottom-1 left-1 bg-blue-700/90 text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded';
+                    tag.className = 'absolute bottom-1 left-1 bg-slate-900/85 text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded';
                     tag.textContent = photo.name;
                     card.appendChild(tag);
 
@@ -1398,7 +1370,7 @@
                 return Promise.all(tasks);
             }
 
-            // --- Populate A4 Sheet & Generate Single-Page PDF with Clickable Chrome Links ---
+            // --- Populate A4 Sheet & Generate 1-Page PDF with Text-Only Links ---
             function fillA4SheetData() {
                 if (!dateTimeManuallyChanged) {
                     setDefaultDateTime();
@@ -1429,9 +1401,6 @@
                 document.getElementById('pdfTruckPlate').textContent = document.getElementById('inputTruckPlate').value.trim() || '—';
                 document.getElementById('pdfTrailerPlate').textContent = document.getElementById('inputTrailerPlate').value.trim() || '—';
 
-                document.getElementById('pdfSecondTrailerPlate').textContent = document.getElementById('inputSecondTrailerPlate').value.trim() || '—';
-                document.getElementById('pdfSecondTrailerRow').style.display = selectedVehicleType === 'ავტომატარებელი' ? 'table-row' : 'none';
-
                 document.getElementById('pdfContainerNumber').textContent = document.getElementById('inputContainerNumber').value.trim() || '—';
                 document.getElementById('pdfContainerRow').style.display = selectedVehicleType === 'კონტეინერი' ? 'table-row' : 'none';
 
@@ -1439,7 +1408,6 @@
                 document.getElementById('pdfDriverPhone').textContent = driverPhoneInput.value.trim() || '—';
                 document.getElementById('pdfSealNumber').textContent = document.getElementById('inputSealNumber').value.trim() || '—';
 
-                // Render Dynamic Checklist Rows in PDF Table (Checkmark + Damage)
                 var pdfChkBody = document.getElementById('pdfChecklistBody');
                 pdfChkBody.innerHTML = '';
                 var items = CATEGORY_CHECKLISTS[selectedVehicleType] || CATEGORY_CHECKLISTS['ტენტი'];
@@ -1468,7 +1436,7 @@
                 var notesVal = document.getElementById('inputNotes').value.trim();
                 document.getElementById('pdfNotes').textContent = notesVal || 'შენიშვნების გარეშე';
 
-                // Render Foto_1.jpg.. links visually on Page 1
+                // Plain underlined text links on PDF (no button/box styling)
                 var linksSection = document.getElementById('pdfPhotosLinkSection');
                 var linksContainer = document.getElementById('pdfPhotoLinksContainer');
                 linksContainer.innerHTML = '';
@@ -1477,11 +1445,11 @@
                     linksSection.style.display = 'block';
                     uploadedPhotos.forEach(function (photo, idx) {
                         var fileName = 'Foto_' + (idx + 1) + '.jpg';
-                        var chip = document.createElement('div');
-                        chip.setAttribute('data-photo-link-idx', idx);
-                        chip.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1.5px solid #60a5fa; color: #1d4ed8; padding: 6px 14px; border-radius: 5px; font-size: 11.5px; font-weight: 800; text-decoration: underline;';
-                        chip.textContent = fileName;
-                        linksContainer.appendChild(chip);
+                        var textLink = document.createElement('span');
+                        textLink.setAttribute('data-photo-link-idx', idx);
+                        textLink.style.cssText = 'color: #1d4ed8; font-size: 11.5px; font-weight: 800; text-decoration: underline; cursor: pointer;';
+                        textLink.textContent = fileName;
+                        linksContainer.appendChild(textLink);
                     });
                 } else {
                     linksSection.style.display = 'none';
@@ -1510,11 +1478,11 @@
                     var sheet = document.getElementById('a4-sheet');
                     var sheetRect = sheet.getBoundingClientRect();
 
-                    var linkChips = Array.prototype.slice.call(sheet.querySelectorAll('[data-photo-link-idx]'));
-                    var linkBoxesMm = linkChips.map(function (chip) {
-                        var r = chip.getBoundingClientRect();
+                    var linkSpans = Array.prototype.slice.call(sheet.querySelectorAll('[data-photo-link-idx]'));
+                    var linkBoxesMm = linkSpans.map(function (span) {
+                        var r = span.getBoundingClientRect();
                         return {
-                            idx: parseInt(chip.getAttribute('data-photo-link-idx'), 10),
+                            idx: parseInt(span.getAttribute('data-photo-link-idx'), 10),
                             x: ((r.left - sheetRect.left) / sheetRect.width) * 210,
                             y: ((r.top - sheetRect.top) / sheetRect.height) * 297,
                             w: (r.width / sheetRect.width) * 210,
@@ -1523,7 +1491,7 @@
                     });
 
                     return window.html2canvas(sheet, {
-                        scale: 2.3,
+                        scale: 2.1,
                         useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false
@@ -1536,13 +1504,13 @@
                             compress: true
                         });
 
-                        var baseImgData = baseCanvas.toDataURL('image/jpeg', 0.92);
+                        var baseImgData = baseCanvas.toDataURL('image/jpeg', 0.88);
                         pdf.addImage(baseImgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
                         linkBoxesMm.forEach(function (box) {
                             var photo = uploadedPhotos[box.idx];
                             if (photo && photo.url) {
-                                pdf.link(box.x, box.y, box.w, box.h, { url: photo.url });
+                                pdf.link(box.x, box.y, box.w, box.h, { url: photo.url, newWindow: true });
                             }
                         });
 
@@ -1564,7 +1532,6 @@
                 }, 4000);
             }
 
-            // --- Collected Checklist Damages Helper ---
             function collectDamagesSummary() {
                 var items = CATEGORY_CHECKLISTS[selectedVehicleType] || CATEGORY_CHECKLISTS['ტენტი'];
                 var list = [];
@@ -1614,7 +1581,6 @@
                     createdAt: Date.now(),
                     truck: document.getElementById('inputTruckPlate').value.trim(),
                     trailer: document.getElementById('inputTrailerPlate').value.trim(),
-                    secondTrailer: selectedVehicleType === 'ავტომატარებელი' ? document.getElementById('inputSecondTrailerPlate').value.trim() : '',
                     container: selectedVehicleType === 'კონტეინერი' ? document.getElementById('inputContainerNumber').value.trim() : '',
                     driverName: driverNameInput.value.trim(),
                     driverPhone: driverPhoneInput.value.trim(),
@@ -1632,14 +1598,12 @@
             function saveReportToHistory(blob, fileName) {
                 var payload = buildReportPayload(fileName);
 
-                // 1. Save shared team record in Firestore so colleagues can view even if you are offline/unavailable
                 if (typeof window.saveSharedInspectionToFirestore === 'function') {
                     window.saveSharedInspectionToFirestore(payload).catch(function (err) {
                         console.warn('Shared Firestore record skipped:', err);
                     });
                 }
 
-                // 2. Save local PDF blob in IndexedDB
                 return openHistoryDb().then(function (db) {
                     return new Promise(function (resolve, reject) {
                         var tx = db.transaction('reports', 'readwrite');
@@ -1723,7 +1687,6 @@
                 return d.toLocaleString('ka-GE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
             }
 
-            // Instant Driver Visit History Card during Form Entry
             function renderDriverInstantCard(rawName) {
                 var box = document.getElementById('driverInstantHistoryBox');
                 var q = (rawName || '').trim().toLowerCase();
@@ -1742,14 +1705,14 @@
                 }
 
                 var displayDriver = matches[0].driverName || rawName;
-                var phone = matches[0].driverPhone || '';
+                var phone = '';
                 matches.forEach(function (m) {
                     if (!phone && m.driverPhone) phone = m.driverPhone;
                 });
 
                 var trucksSet = {};
                 matches.forEach(function (m) {
-                    var combo = [m.truck, m.trailer, m.secondTrailer].filter(Boolean).join(' / ');
+                    var combo = [m.truck, m.trailer].filter(Boolean).join(' / ');
                     if (combo) trucksSet[combo] = true;
                 });
 
@@ -1765,7 +1728,7 @@
                 matches.slice(0, 6).forEach(function (m) {
                     var row = document.createElement('div');
                     row.className = 'text-[11px] bg-white rounded-lg px-2.5 py-1.5 border border-orange-100 flex items-center justify-between gap-2';
-                    var vLabel = [m.truck, m.trailer, m.secondTrailer].filter(Boolean).join(' / ') || '—';
+                    var vLabel = [m.truck, m.trailer].filter(Boolean).join(' / ') || '—';
                     row.innerHTML =
                         '<span class="font-bold text-slate-800 truncate">' + formatHistoryDate(m.inspectionDate) + '</span>' +
                         '<span class="font-mono font-extrabold text-orange-700 shrink-0">' + vLabel + '</span>';
@@ -1773,7 +1736,6 @@
                 });
             }
 
-            // Detailed Driver Dossier in History Section when searching a Driver
             function renderDriverSearchDossier(query, filteredRecords) {
                 var card = document.getElementById('driverSearchSummaryCard');
                 if (!card) return;
@@ -1798,7 +1760,7 @@
 
                 driverMatches.forEach(function (r) {
                     if (!phone && r.driverPhone) phone = r.driverPhone;
-                    var v = [r.truck, r.trailer, r.secondTrailer, r.container].filter(Boolean).join(' / ');
+                    var v = [r.truck, r.trailer, r.container].filter(Boolean).join(' / ');
                     if (v) vehiclesMap[v] = (vehiclesMap[v] || 0) + 1;
                 });
 
@@ -1820,7 +1782,7 @@
                 dList.innerHTML = '';
                 driverMatches.forEach(function (r) {
                     var item = document.createElement('div');
-                    var vStr = [r.truck, r.trailer, r.secondTrailer].filter(Boolean).join(' / ') || '—';
+                    var vStr = [r.truck, r.trailer].filter(Boolean).join(' / ') || '—';
                     item.textContent = '• ' + formatHistoryDate(r.inspectionDate) + ' — ' + vStr + (r.direction ? ' (' + r.direction + ')' : '');
                     dList.appendChild(item);
                 });
@@ -1852,7 +1814,6 @@
                         item.fileName,
                         item.truck,
                         item.trailer,
-                        item.secondTrailer,
                         item.container,
                         item.driverName,
                         item.driverPhone,
@@ -1906,7 +1867,7 @@
 
                     var title = document.createElement('span');
                     title.className = 'text-xs font-extrabold text-slate-900';
-                    var vehiclesTitle = [item.truck, item.trailer, item.secondTrailer].filter(Boolean).join(' / ') || 'ტრანსპორტი —';
+                    var vehiclesTitle = [item.truck, item.trailer].filter(Boolean).join(' / ') || 'ტრანსპორტი —';
                     title.textContent = vehiclesTitle;
                     topRow.appendChild(title);
 
@@ -1947,14 +1908,14 @@
 
                     if (Array.isArray(item.photoUrls) && item.photoUrls.length > 0) {
                         var pRow = document.createElement('div');
-                        pRow.className = 'flex flex-wrap gap-1.5 mt-1.5';
+                        pRow.className = 'flex flex-wrap gap-2.5 mt-1.5';
                         item.photoUrls.forEach(function (p) {
                             if (p && p.url) {
                                 var a = document.createElement('a');
                                 a.href = p.url;
                                 a.target = '_blank';
                                 a.rel = 'noopener noreferrer';
-                                a.className = 'text-[10px] font-mono font-bold text-blue-700 underline bg-blue-50 px-2 py-0.5 rounded';
+                                a.className = 'text-[10px] font-mono font-bold text-blue-700 underline';
                                 a.textContent = p.name || 'Foto.jpg';
                                 pRow.appendChild(a);
                             }
@@ -1995,7 +1956,6 @@
                 });
             }
 
-            // Filter Chips
             document.querySelectorAll('.hfilter-btn').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     activeHistoryFilter = btn.getAttribute('data-hfilter');
@@ -2104,7 +2064,7 @@
                     return new Promise(function (resolve, reject) {
                         var zip = new JSZip();
                         var folder = zip.folder('GW_Inspection_Backup');
-                        var csv = ['ID,Date,Truck,Trailer,SecondTrailer,Container,Driver,Phone,Type,Direction,Inspector,Damages,File'];
+                        var csv = ['ID,Date,Truck,Trailer,Container,Driver,Phone,Type,Direction,Inspector,Damages,File'];
                         var tx = db.transaction('reports', 'readonly');
                         var req = tx.objectStore('reports').openCursor();
                         req.onsuccess = function () {
@@ -2120,7 +2080,7 @@
                                 folder.file(String(x.id).padStart(6, '0') + '_' + safe, x.blob);
                             }
                             csv.push([
-                                x.id, x.inspectionDate, x.truck, x.trailer, x.secondTrailer,
+                                x.id, x.inspectionDate, x.truck, x.trailer,
                                 x.container, x.driverName, x.driverPhone, x.vehicleType,
                                 x.direction, x.inspector, (x.damages || []).join(' | '), safe
                             ].map(function (v) {
