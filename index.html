@@ -326,7 +326,7 @@
                     </div>
                     <div style="display: grid; grid-template-columns: 1.1fr 1fr 1.1fr; align-items: center; column-gap: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; font-size: 10.5px;">
                         <div style="min-width: 0;"><div style="color: #64748b; font-weight: 600; margin-bottom: 3px;"><span style="display:block;">თარიღი / დრო:</span><span style="display:block;font-size:9px;font-weight:500;color:#87919b;line-height:1.15;margin-top:1px;">Date / time</span></div><strong id="pdfDateTime" style="display: block; color: #0f172a; white-space: nowrap;">—</strong></div>
-                        <div style="min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2px 0;"><div style="color:#64748b;font-weight:700;line-height:1.35;margin:0 0 7px;text-align:center;"><span style="display:block;">მიმართულება</span><span style="display:block;font-size:9px;font-weight:500;color:#87919b;line-height:1.25;margin-top:2px;">Direction</span></div><div id="pdfDirection" style="display:flex;align-items:center;justify-content:center;min-width:118px;height:30px;box-sizing:border-box;text-align:center;line-height:30px;background:#e97832;color:#fff;font-weight:800;font-size:12px;letter-spacing:.5px;padding:0 14px;border-radius:6px;border:1.5px solid #9a3412;white-space:nowrap;">—</div></div>
+                        <div style="min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2px 0;"><div style="color:#64748b;font-weight:700;line-height:1.35;margin:0 0 7px;text-align:center;"><span style="display:block;">მიმართულება</span><span style="display:block;font-size:9px;font-weight:500;color:#87919b;line-height:1.25;margin-top:2px;">Direction</span></div><div id="pdfDirection" style="display:flex;align-items:center;justify-content:center;min-width:118px;height:30px;box-sizing:border-box;text-align:center;line-height:1.1;background:#e97832;color:#fff;font-weight:800;font-size:12px;letter-spacing:.5px;padding:0 14px;border-radius:6px;border:1.5px solid #9a3412;white-space:nowrap;vertical-align:middle;">—</div></div>
                         <div style="min-width: 0; text-align: right;"><div style="color: #64748b; font-weight: 600; margin-bottom: 3px;"><span style="display:block;">მანქანის კატეგორია:</span><span style="display:block;font-size:9px;font-weight:500;color:#87919b;line-height:1.15;margin-top:1px;">Vehicle category</span></div><strong id="pdfVehicleType" style="display: block; color: #0f172a; white-space: nowrap;">—</strong></div>
                     </div>
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
@@ -843,30 +843,12 @@
                 return ensurePhotosUploaded().then(function () {
                     fillA4SheetData();
                     var sheet = document.getElementById('a4-sheet'), rect = sheet.getBoundingClientRect();
-                    var photoRects = Array.prototype.slice.call(sheet.querySelectorAll('.pdf-photo-thumb')).map(function (el) {
-                        var r = el.getBoundingClientRect();
-                        return { index: Number(el.getAttribute('data-photo-index')), x: ((r.left - rect.left) / rect.width) * 210, y: ((r.top - rect.top) / rect.height) * 297, w: (r.width / rect.width) * 210, h: (r.height / rect.height) * 297 };
-                    });
                     return window.html2canvas(sheet, { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 15000 }).then(function (canvas) {
                         if (!canvas) throw new Error('PDF რენდერი ვერ მოესწრო');
                         var pdf = new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true, putOnlyUsedFonts:true });
                         pdf.setProperties({ title:'Gebrüder Weiss - Inspection Report', subject:'Vehicle inspection report with high-resolution photos', creator:'GW Inspection' });
                         pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
 
-                        // Re-place each original-quality photo over its small preview.
-                        // The thumbnail stays visually small, while the PDF stores the photo pixels at full resolution.
-                        photoRects.forEach(function (r) {
-                            var photo = uploadedPhotos[r.index];
-                            if (!photo || !photo.dataUrl) return;
-                            var pw = photo.width || 4, ph = photo.height || 3;
-                            var scale = Math.min(r.w / pw, r.h / ph);
-                            var drawW = pw * scale, drawH = ph * scale;
-                            var drawX = r.x + (r.w - drawW) / 2;
-                            var drawY = r.y + (r.h - drawH) / 2;
-                            pdf.addImage(photo.dataUrl, 'JPEG', drawX, drawY, drawW, drawH, 'photo_' + r.index, 'FAST');
-                            // Same-page zoom annotation: PDF readers that support link destinations can zoom to this thumbnail.
-                            try { pdf.link(r.x, r.y, r.w, r.h, { pageNumber: 1, top: Math.max(0, r.y - 12), zoom: 2.5 }); } catch (e) {}
-                        });
                         return pdf.output('blob');
                     });
                 });
