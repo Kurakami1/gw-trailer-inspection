@@ -20,7 +20,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        :root { --gw-orange:#e97832; --gw-ink:#30343a; --gw-muted:#74808b; --gw-line:#e7e9ec; --gw-paper:#f7f8f9; }
+        :root { --gw-orange:#e97832; --gw-ink:#30343a; --gw-muted:#74808b; --gw-line:#e4eae6; --gw-paper:#f4f7f5; --gw-sage:#e8f0ea; --gw-blue:#edf2f7; --gw-sand:#f6f2ea; }
         * { box-sizing:border-box; }
         body { font-family:'Noto Sans Georgian',sans-serif; background:var(--gw-paper); color:#292929; -webkit-tap-highlight-color:transparent; }
         .gw-orange { background-color:var(--gw-orange); }
@@ -36,6 +36,25 @@
         #a4-sheet { width:210mm; height:297mm; padding:10mm 12mm 9mm; box-sizing:border-box; background:#fff; color:#292929; font-family:'Noto Sans Georgian',sans-serif; display:flex; flex-direction:column; justify-content:space-between; position:relative; }
         .gw-orange, .gw-dark { transition:background-color .16s ease, transform .16s ease; }
         button:disabled { opacity:.65; cursor:wait; }
+        /* Gebrüder Weiss Modern: soft sage, dusty blue and warm sand accents */
+        body { background:var(--gw-paper); }
+        main section.bg-white { border-color:#e3eae5!important; box-shadow:0 4px 18px rgba(43,58,49,.045); }
+        header.gw-dark { background:#303a3b; border-bottom-color:#e97832!important; }
+        .bg-slate-50, .bg-slate-50\/70 { background-color:#f3f6f4!important; }
+        .bg-slate-100 { background-color:#edf2ef!important; }
+        .border-slate-200, .border-slate-200\/80 { border-color:#e1e8e3!important; }
+        .text-slate-500 { color:#718078!important; }
+        .text-slate-600 { color:#596960!important; }
+        .text-slate-700 { color:#46564d!important; }
+        .text-slate-800 { color:#35443c!important; }
+        input, select, textarea { border-color:#dfe7e1!important; }
+        input:focus, select:focus, textarea:focus { border-color:var(--gw-orange)!important; box-shadow:0 0 0 3px rgba(233,120,50,.13)!important; }
+        #triggerPhotoInputBtn { background:#f2f6f3!important; border-color:#cbd9cf!important; }
+        #triggerPhotoInputBtn:hover { background:#e8f0ea!important; }
+        #historyStorageBar { background:#9bb9a5!important; }
+        .hfilter-btn:not(.bg-slate-900) { background:#edf2f7!important; color:#586b7a!important; }
+        #setupReminder > div { background:#f6f2ea!important; border-color:#e7ddcc!important; }
+        #a4-sheet { background:#fff; }
         @media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none!important; animation:none!important; } }
     </style>
 </head>
@@ -176,7 +195,7 @@
                     <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-camera-retro"></i></div>
                     <div class="text-left">
                         <p class="text-xs sm:text-sm font-bold text-slate-700">ფოტოს გადაღება ან არჩევა</p>
-                        <p class="text-[10px] text-slate-400">PDF-ში ფოტოები გამოჩნდება პატარა ზომით</p>
+                        <p class="text-[10px] text-slate-400">მაქსიმუმ 6 ფოტო · მაღალი ხარისხი</p>
                     </div>
                 </button>
                 <input type="file" id="hiddenPhotoInput" accept="image/*" multiple class="hidden">
@@ -303,11 +322,11 @@
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #f37021; padding-bottom: 8px; margin-bottom: 10px;">
                         <div id="pdfLogoSlot" style="height: 36px; display: flex; align-items: center;"><div style="display: flex; align-items: center; gap: 8px; background: #f37021; color: #ffffff; padding: 5px 12px; border-radius: 4px;"><span style="font-size: 16px; font-weight: 800; letter-spacing: -0.3px;">Gebrüder Weiss</span><span style="width: 12px; height: 12px; border: 2px solid #ffffff; border-radius: 50%; display: inline-block;"></span></div></div>
-                        <div style="text-align: right;"><div style="font-size: 14px; font-weight: 800; color: #0f172a;">სატრანსპორტო საშუალების გარეგანი აღწერის აქტი</div><div style="font-size:9px;color:#64748b;font-weight:600;margin-top:2px;">VEHICLE EXTERIOR INSPECTION REPORT</div><div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">EXTERIOR TRAILER / VEHICLE INSPECTION REPORT</div></div>
+                        <div style="text-align: right;"><div style="font-size: 14px; font-weight: 800; color: #0f172a;">სატრანსპორტო საშუალების გარეგანი აღწერის აქტი</div><div style="font-size:9px;color:#64748b;font-weight:600;margin-top:3px;">VEHICLE EXTERIOR INSPECTION REPORT</div></div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1.1fr 1fr 1.1fr; align-items: center; column-gap: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; font-size: 10.5px;">
                         <div style="min-width: 0;"><div style="color: #64748b; font-weight: 600; margin-bottom: 3px;"><span style="display:block;">თარიღი / დრო:</span><span style="display:block;font-size:9px;font-weight:500;color:#87919b;line-height:1.15;margin-top:1px;">Date / time</span></div><strong id="pdfDateTime" style="display: block; color: #0f172a; white-space: nowrap;">—</strong></div>
-                        <div style="min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;"><div style="color: #64748b; font-weight: 700; margin-bottom: 4px; text-align: center;"><span style="display:block;">მიმართულება:</span><span style="display:block;font-size:9px;font-weight:500;color:#87919b;line-height:1.15;margin-top:1px;">Direction</span></div><div id="pdfDirection" style="display: flex; align-items: center; justify-content: center; min-width: 118px; min-height: 28px; line-height: 1.2; min-height: 28px; box-sizing: border-box; text-align: center; line-height: 1.2; vertical-align: middle; background: #e97832; color: #ffffff; font-weight: 800; font-size: 12px; letter-spacing: 0.5px; padding: 6px 14px; border-radius: 6px; border: 1.5px solid #9a3412; white-space: nowrap;">—</div></div>
+                        <div style="min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2px 0;"><div style="color:#64748b;font-weight:700;line-height:1.35;margin:0 0 7px;text-align:center;"><span style="display:block;">მიმართულება</span><span style="display:block;font-size:9px;font-weight:500;color:#87919b;line-height:1.25;margin-top:2px;">Direction</span></div><div id="pdfDirection" style="display:flex;align-items:center;justify-content:center;min-width:118px;height:30px;box-sizing:border-box;text-align:center;line-height:30px;background:#e97832;color:#fff;font-weight:800;font-size:12px;letter-spacing:.5px;padding:0 14px;border-radius:6px;border:1.5px solid #9a3412;white-space:nowrap;">—</div></div>
                         <div style="min-width: 0; text-align: right;"><div style="color: #64748b; font-weight: 600; margin-bottom: 3px;"><span style="display:block;">მანქანის კატეგორია:</span><span style="display:block;font-size:9px;font-weight:500;color:#87919b;line-height:1.15;margin-top:1px;">Vehicle category</span></div><strong id="pdfVehicleType" style="display: block; color: #0f172a; white-space: nowrap;">—</strong></div>
                     </div>
                     <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px;">
@@ -327,13 +346,13 @@
                     </table>
                     <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 10px; margin-bottom: 12px; background: #fffbeb; font-size: 10.5px;"><strong style="color: #92400e;"><span style="display:block;">დამატებითი შენიშვნა:</span><span style="display:block;font-size:8px;font-weight:500;color:#87919b;line-height:1.15;margin-top:1px;">Additional notes</span></strong><span id="pdfNotes" style="color: #1e293b; margin-left: 5px;">შენიშვნების გარეშე</span></div>
                     <div id="pdfPhotosLinkSection" style="display: none; margin-top: 2px;">
-                        <div id="pdfPhotoLinksContainer" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; align-items: stretch;"></div>
+                        <div id="pdfPhotoLinksContainer" style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;align-items:stretch;width:100%;"></div>
                     </div>
                 </div>
                 <div style="flex: 1;"></div>
                 <div>
                     <div style="border-top: 2px solid #0f172a; padding-top: 8px; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">
-                        <div style="font-size: 11px;"><div style="color: #64748b; font-size: 9.5px; text-transform: uppercase; font-weight: 700;">შემოწმება ჩაატარა / პასუხისმგებელი პირი:<span style="display:block;font-size:8px;font-weight:500;color:#87919b;margin-top:1px;">Inspected by / responsible staff member</span></div><div id="pdfInspectorName" style="font-size: 13px; font-weight: 800; color: #0f172a; margin-top: 2px;">—</div><div id="pdfInspectorPos" style="font-size: 10.5px; color: #475569;">Gebrüder Weiss</div><div id="pdfInspectorPhone" style="font-size: 9px; color: #475569; margin-top: 2px;"></div><div id="pdfInspectorEmail" style="font-size: 8px; color: #87919b; margin-top: 1px;"></div></div>
+                        <div style="font-size:11px;line-height:1.4;min-width:0;padding-right:12px;"><div style="color:#64748b;font-size:9.5px;text-transform:uppercase;font-weight:700;line-height:1.35;margin-bottom:4px;">დათვალიერება ჩაატარა / პასუხისმგებელი პირი:<span style="display:block;font-size:8px;font-weight:500;color:#87919b;line-height:1.3;margin-top:3px;">Inspected by / responsible staff member</span></div><div id="pdfInspectorName" style="font-size: 13px; font-weight: 800; color: #0f172a; margin-top: 2px;">—</div><div id="pdfInspectorPos" style="font-size: 10.5px; color: #475569;">Gebrüder Weiss</div><div id="pdfInspectorPhone" style="font-size: 9px; color: #475569; margin-top: 2px;"></div><div id="pdfInspectorEmail" style="font-size: 8px; color: #87919b; margin-top: 1px;"></div></div>
                         <div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 10.5px; font-weight: 700; color: #475569;"><span style="display:block;">ხელმოწერა:</span><span style="display:block;font-size:8px;font-weight:500;color:#87919b;line-height:1.15;margin-top:1px;">Signature</span></span><div style="width: 145px; height: 48px; border-bottom: 1.5px solid #0f172a; display: flex; align-items: center; justify-content: center; overflow: hidden;"><img id="pdfSignatureImg" src="" alt="" style="max-height: 44px; max-width: 140px; object-fit: contain; display: none;"></div></div>
                     </div>
                     <div style="border-top: 1px solid #e2e8f0; padding-top: 5px; font-size: 7.5px; line-height: 1.35; color: #64748b; text-align: left;"><div style="font-size:7px;color:#a0a8b0;letter-spacing:.15px;">© Gebrüder Weiss · Internal document</div><div>PV/Process Owner: AMA210/NOK210</div><div id="pdfDocUpdateDate">Latest update by: AMA210/NOK210 (21.11.2026)</div><div>File: Copy of FO_03_01_TBI_Equipment_Checklist_EN_GE</div></div>
@@ -390,7 +409,7 @@
                 '2. ტრანსპორტი, ლუქი და მძღოლი':'2. Vehicle, seal & driver','მანქანის ნომერი *':'Truck registration *','მისაბმელის ნომერი *':'Trailer registration *','კონტეინერის ნომერი':'Container number','ლუქის ნომერი / ნომრები':'Seal number(s)',
                 'მძღოლის სახელი და გვარი':'Driver full name','სახელი გვარი':'First name Last name','მძღოლის ტელეფონი':'Driver phone','მძღოლის ისტორია':'Driver history',
                 'კომპონენტები —':'3. Components —','':'✓ Mark as OK or select damage','დაზიანება...':'Select damage...','დამატებითი შენიშვნა':'Additional notes','დამატებითი დეტალები (სურვილისამებრ)...':'Additional details (optional)...',
-                'ფოტოები (მაქს. 6)':'Photos (max. 6)','ფოტოს გადაღება ან არჩევა':'Take or choose photos','PDF-ში ფოტოები გამოჩნდება პატარა ზომით':'Photos appear as small previews in the PDF.',
+                'ფოტოები (მაქს. 6)':'Photos (max. 6)','ფოტოს გადაღება ან არჩევა':'Take or choose photos','მაქსიმუმ 6 ფოტო · მაღალი ხარისხი':'Photos appear as small previews in the PDF.',
                 'აქტების ისტორია (საერთო გუნდური + ლოკალური)':'Report history (team + local)','ძებნა: მძღოლი, ტელეფონი, მანქანა, მისაბმელი, კონტეინერი, მიმართულება...':'Search: driver, phone, truck, trailer, container, direction...',
                 'ყველა':'All','საერთო (Cloud)':'Team (Cloud)','ლოკალური PDF':'Local PDF','დაზიანებით':'With damage','მძღოლის შემოსვლების დოსიე':'Driver visit history','შემოსვლა':'Visits','სარეზერვო ZIP':'Backup ZIP','ლოკალური გასუფთავება':'Clear local history',
                 'ბრაუზერის საცავი':'Browser storage','მოწმდება...':'Checking...','ისტორია იტვირთება...':'Loading history...','წინა':'Previous','შემდეგი':'Next','გვერდი':'Page',
@@ -401,7 +420,7 @@
                 'შესვლა':'Sign in','ელ-ფოსტა':'Email','პაროლი':'Password','ნამდვილად გსურთ ლოკალური PDF არქივის გასუფთავება?':'Are you sure you want to clear the local PDF archive?',
                 'მძღოლი:':'Driver:','მძღოლის ტელეფონი:':'Driver phone:','მანქანის ნომერი:':'Truck registration:','მისაბმელის ნომერი:':'Trailer registration:',
                 'კომპონენტი':'Component','მონიშვნა':'Check','დაზიანება / სტატუსი':'Damage / status','დამატებითი შენიშვნა:':'Additional notes:','შენიშვნების გარეშე':'No additional notes','მიმართულება:':'Direction:','მანქანის კატეგორია:':'Vehicle category:','ლუქის ნომერი / ნომრები:':'Seal number(s):',
-                'დათვალიერება ჩაატარა / პასუხისმგებელი პირი:':'Inspected by / responsible person:','ხელმოწერა:':'Signature:','შეცდომა:':'Error:','PDF ბიბლიოთეკები ჯერ იტვირთება':'PDF libraries are still loading','PDF დანართების ბიბლიოთეკა ჯერ იტვირთება':'PDF attachment library is still loading',
+                'დათვალიერება ჩაატარა / პასუხისმგებელი პირი:':'Inspected by / responsible staff member:','ხელმოწერა:':'Signature:','შეცდომა:':'Error:','PDF ბიბლიოთეკები ჯერ იტვირთება':'PDF libraries are still loading','PDF დანართების ბიბლიოთეკა ჯერ იტვირთება':'PDF attachment library is still loading',
                 'სატრანსპორტო საშუალების გარეგანი აღწერის აქტი':'Vehicle Exterior Inspection Report','თარიღი / დრო:':'Date / time:','მანქანის კატეგორია:':'Vehicle category:','კონტეინერის ნომერი:':'Container number:','დაზიანების გარეშე':'No damage','გახეული':'Torn','გაჭრილი':'Cut','გახვრეტილი':'Punctured','გატეხილი':'Broken','გაღუნული':'Bent','დეფორმირებული':'Deformed','დაბზარული':'Cracked','კოროზია':'Corrosion',
                 '1. ტენტი':'1. Curtain','2. ტენტის თოკი':'2. Curtain rope','3. ღვედები':'3. Straps','4. ბალთები':'4. Buckles','5. კარკასი':'5. Frame','6. უკანა კარები':'6. Rear doors','1. კედლები':'1. Walls','2. სახურავი':'2. Roof','3. კარები':'3. Doors','4. საკეტები':'4. Locks','5. კუთხეები':'5. Corners','1. პირველი მისაბმელი':'1. First trailer','2. მეორე მისაბმელი':'2. Second trailer','3. ტენტები':'3. Tarpaulins','4. თოკები':'4. Ropes','1. ბორტები':'1. Side panels','3. მინები':'3. Windows',
                 'შენახვა':'Save','შევსება':'Complete','სტანდარტული':'Default','ლოგოს ატვირთვა':'Upload logo','ახალი კოდი (მაგ: GEKUTTBI)':'New code (e.g. GEKUTTBI)','დამატება':'Add','სარეზერვო ZIP':'Backup ZIP','ლოკალური გასუფთავება':'Clear local history','ბრაუზერის საცავი':'Browser storage','მოწმდება...':'Checking...','ისტორია იტვირთება...':'Loading history...','გვერდი':'Page','შეტყობინება':'Notification','შესვლა':'Sign in','ელ-ფოსტა':'Email','პაროლი':'Password','ფოტო ბმულები (დააჭირეთ ნაწერს ახალ გვერდზე გასახსნელად):':'Photo attachments (tap a link to open):','შენიშვნების გარეშე':'No additional notes','მიმართულება:':'Direction:','მძღოლი:':'Driver:','კომპონენტი':'Component','მონიშვნა':'Check','დაზიანება / სტატუსი':'Damage / status','დამატებითი შენიშვნა:':'Additional notes:','მონიშნულია':'Checked','დაზიანება...':'Select damage...','ტენტი':'Curtainsider','მაცივარი':'Refrigerated','ავტომატარებელი':'Car transporter','კონტეინერი':'Container','სატვირთო':'Truck','მიკროავტობუსი':'Van','მძღოლის ისტორია':'Driver history','შემოსვლები':'Visits','მაქსიმუმ 6 ფოტოს დამატებაა შესაძლებელი':'You can add up to 6 photos','ფორმა გასუფთავდა':'Form cleared','პროფილი შენახულია!':'Profile saved!','ფოტო ბმულები (დააჭირეთ ნაწერს ახალ გვერდზე გასახსნელად):':'Photo attachments (tap a link to open):'
@@ -712,7 +731,7 @@
             hiddenPhotoInput.addEventListener('change', function (e) {
                 var files = Array.prototype.slice.call(e.target.files || []).slice(0, 6 - uploadedPhotos.length);
                 files.forEach(function (f) {
-                    processImageToCanvas(f, 3200, 0.94, function (p) {
+                    processImageToCanvas(f, 4000, 0.97, function (p) {
                         if (uploadedPhotos.length < 6) { p.name = 'Foto_' + (uploadedPhotos.length + 1) + '.jpg'; p.url = ''; uploadedPhotos.push(p); renderPhotoThumbnails(); }
                     });
                 });
@@ -798,7 +817,7 @@
                         var card = document.createElement('div');
                         card.className = 'pdf-photo-thumb';
                         card.setAttribute('data-photo-index', String(i));
-                        card.style.cssText = 'height:34mm;min-width:0;border:1px solid #dce1e5;border-radius:4px;background:#f5f7f8;overflow:hidden;display:flex;align-items:center;justify-content:center;';
+                        card.style.cssText = 'height:36mm;min-width:0;width:100%;border:1px solid #dce1e5;border-radius:4px;background:#f5f7f8;overflow:hidden;display:flex;align-items:center;justify-content:center;';
                         var img = document.createElement('img');
                         img.src = p.dataUrl;
                         img.alt = '';
@@ -813,7 +832,7 @@
                 document.getElementById('pdfInspectorName').textContent = capitalizeName(settings.inspectorName) || '—';
                 document.getElementById('pdfInspectorPos').textContent = settings.inspectorPos || 'Gebrüder Weiss';
                 document.getElementById('pdfInspectorEmail').textContent = settings.inspectorEmail || '';
-                document.getElementById('pdfInspectorPhone').textContent = settings.inspectorPhone ? ('მობ.: ' + settings.inspectorPhone + '  |  Mobile: ' + settings.inspectorPhone) : '';
+                document.getElementById('pdfInspectorPhone').textContent = settings.inspectorPhone ? ('მობილური / Mobile: ' + settings.inspectorPhone) : '';
                 var pdfSigImg = document.getElementById('pdfSignatureImg');
                 if (settings.signatureDataUrl) { pdfSigImg.src = settings.signatureDataUrl; pdfSigImg.style.display = 'block'; }
                 else { pdfSigImg.style.display = 'none'; }
