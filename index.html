@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root { --gw-orange:#f37021; --gw-ink:#292929; --gw-muted:#687078; --gw-line:#e5e7eb; --gw-paper:#f6f6f4; }
@@ -690,21 +691,13 @@
                 });
             }
 
+            // Photos remain on this device and are embedded inside the generated PDF.
+            // No Firebase Storage upload or external photo URL is used.
             function ensurePhotosUploaded() {
-                if (!uploadedPhotos.length) return Promise.resolve([]);
-                if (typeof window.uploadInspectionPhotoToStorage !== 'function') {
-                    return Promise.reject(new Error('ფოტოების Cloud საცავი მიუწვდომელია. გადაამოწმეთ ინტერნეტი და Firebase Storage.'));
-                }
-                var truck = sanitizePlate(document.getElementById('inputTruckPlate').value) || 'REPORT';
-                return Promise.all(uploadedPhotos.map(function (p, idx) {
+                uploadedPhotos.forEach(function (p, idx) {
                     p.name = 'Foto_' + (idx + 1) + '.jpg';
-                    if (p.url) return Promise.resolve(p.url);
-                    return window.uploadInspectionPhotoToStorage(p.dataUrl, truck, p.name).then(function (u) {
-                        if (!u) throw new Error(p.name + ' ვერ აიტვირთა');
-                        p.url = u;
-                        return u;
-                    });
-                }));
+                });
+                return Promise.resolve(uploadedPhotos);
             }
 
             function fillA4SheetData() {
@@ -747,15 +740,12 @@
 
                 var linksSection = document.getElementById('pdfPhotosLinkSection'), linksContainer = document.getElementById('pdfPhotoLinksContainer');
                 linksContainer.innerHTML = '';
-                var validPhotos = uploadedPhotos.filter(function (p) { return Boolean(p && p.url); });
+                var validPhotos = uploadedPhotos.filter(function (p) { return Boolean(p && p.dataUrl); });
                 if (validPhotos.length) {
                     linksSection.style.display = 'block';
                     validPhotos.forEach(function (p, i) {
-                        var link = document.createElement('a');
-                        link.setAttribute('data-photo-url', p.url);
-                        link.href = p.url;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
+                        var link = document.createElement('span');
+                        link.setAttribute('data-embedded-photo-index', String(i));
                         link.style.cssText = 'display:inline-block;color:#d95f18;font-size:11.5px;font-weight:800;text-decoration:underline;padding:3px 2px;';
                         link.textContent = '↗ ' + (p.name || ('Foto_' + (i + 1) + '.jpg'));
                         linksContainer.appendChild(link);
@@ -772,25 +762,66 @@
                 else { pdfSigImg.style.display = 'none'; }
             }
 
+            function dataUrlToBytes(dataUrl) {
+                var base64 = String(dataUrl).split(',')[1] || '';
+                var binary = atob(base64), bytes = new Uint8Array(binary.length);
+                for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                return bytes;
+            }
+
             function createA4PdfBlob() {
                 if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') return Promise.reject(new Error('PDF ბიბლიოთეკები ჯერ იტვირთება'));
+                if (uploadedPhotos.length && (!window.PDFLib || !window.PDFLib.PDFDocument)) return Promise.reject(new Error('PDF დანართების ბიბლიოთეკა ჯერ იტვირთება'));
                 return ensurePhotosUploaded().then(function () {
                     fillA4SheetData();
                     var sheet = document.getElementById('a4-sheet'), rect = sheet.getBoundingClientRect();
-                    var linksMm = Array.prototype.slice.call(sheet.querySelectorAll('[data-photo-url]')).map(function (el) {
+                    var photoLinks = Array.prototype.slice.call(sheet.querySelectorAll('[data-embedded-photo-index]')).map(function (el) {
                         var r = el.getBoundingClientRect();
-                        return { url: el.getAttribute('data-photo-url'), x: ((r.left - rect.left) / rect.width) * 210, y: ((r.top - rect.top) / rect.height) * 297, w: (r.width / rect.width) * 210, h: (r.height / rect.height) * 297 };
+                        return { index: Number(el.getAttribute('data-embedded-photo-index')), x: ((r.left - rect.left) / rect.width) * 210, y: ((r.top - rect.top) / rect.height) * 297, w: (r.width / rect.width) * 210, h: (r.height / rect.height) * 297 };
                     });
                     return window.html2canvas(sheet, { scale: 1.35, useCORS: true, backgroundColor: '#ffffff', logging: false }).then(function (canvas) {
                         if (!canvas) throw new Error('PDF რენდერი ვერ მოესწრო');
                         var pdf = new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true, putOnlyUsedFonts:true });
-                        pdf.setProperties({ title:'Gebrüder Weiss - Inspection Report', subject:'Vehicle inspection report', creator:'GW Inspection' });
-                        // One A4 page only: photos stay in Cloud Storage and appear as clickable URL annotations.
+                        pdf.setProperties({ title:'Gebrüder Weiss - Inspection Report', subject:'Vehicle inspection report with embedded photo attachments', creator:'GW Inspection' });
                         pdf.addImage(canvas.toDataURL('image/jpeg', 0.78), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-                        linksMm.forEach(function (b) {
-                            if (b.url && b.w > 2 && b.h > 2) pdf.link(b.x, b.y, b.w, b.h, { url:b.url, newWindow:true });
+                        var baseBlob = pdf.output('blob');
+                        if (!uploadedPhotos.length) return baseBlob;
+
+                        return baseBlob.arrayBuffer().then(async function (buffer) {
+                            var PDFLib = window.PDFLib;
+                            var doc = await PDFLib.PDFDocument.load(buffer);
+                            var page = doc.getPages()[0], pageHeight = page.getHeight();
+                            for (var i = 0; i < uploadedPhotos.length; i++) {
+                                var photo = uploadedPhotos[i];
+                                await doc.attach(dataUrlToBytes(photo.dataUrl), photo.name || ('Foto_' + (i + 1) + '.jpg'), {
+                                    mimeType: 'image/jpeg', description: 'Gebrüder Weiss inspection photo ' + (i + 1),
+                                    creationDate: new Date(), modificationDate: new Date()
+                                });
+                            }
+                            // Link annotations point to the embedded PDF file specifications.
+                            // The visible labels remain ordinary text on the single A4 page.
+                            var namesDict = doc.catalog.lookup(PDFLib.PDFName.of('Names'), PDFLib.PDFDict);
+                            var embeddedDict = namesDict && namesDict.lookup(PDFLib.PDFName.of('EmbeddedFiles'), PDFLib.PDFDict);
+                            var nameArray = embeddedDict && embeddedDict.lookup(PDFLib.PDFName.of('Names'), PDFLib.PDFArray);
+                            if (!nameArray) throw new Error('PDF-ში ფოტოების დანართების შექმნა ვერ მოხერხდა');
+                            var fileSpecs = {};
+                            for (var n = 0; n + 1 < nameArray.size(); n += 2) {
+                                var specRef = nameArray.get(n + 1), spec = doc.context.lookup(specRef, PDFLib.PDFDict);
+                                var fileNameObj = spec.lookup(PDFLib.PDFName.of('UF')) || spec.lookup(PDFLib.PDFName.of('F'));
+                                if (fileNameObj && fileNameObj.decodeText) fileSpecs[fileNameObj.decodeText()] = specRef;
+                            }
+                            photoLinks.forEach(function (link) {
+                                var photo = uploadedPhotos[link.index];
+                                var specRef = photo && fileSpecs[photo.name];
+                                if (!specRef || link.w <= 2 || link.h <= 2) return;
+                                var rectPoints = [link.x * 72 / 25.4, pageHeight - ((link.y + link.h) * 72 / 25.4), (link.x + link.w) * 72 / 25.4, pageHeight - (link.y * 72 / 25.4)];
+                                var action = doc.context.obj({ S: PDFLib.PDFName.of('Launch'), F: specRef, NewWindow: true });
+                                var annotation = doc.context.obj({ Type: PDFLib.PDFName.of('Annot'), Subtype: PDFLib.PDFName.of('Link'), Rect: rectPoints, Border: [0, 0, 0], A: action, Contents: PDFLib.PDFString.of('Open ' + photo.name) });
+                                page.node.addAnnot(doc.context.register(annotation));
+                            });
+                            var finalBytes = await doc.save({ useObjectStreams: true, addDefaultPage: false });
+                            return new Blob([finalBytes], { type:'application/pdf' });
                         });
-                        return pdf.output('blob');
                     });
                 });
             }
@@ -1090,7 +1121,6 @@
       import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-analytics.js";
       import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
       import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-      import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js";
 
       const app = initializeApp({
         apiKey: "AIzaSyCdmaxREu-2eOSKZy5CNcA5_5lL7u3mkts",
@@ -1102,7 +1132,7 @@
         measurementId: "G-CD8CZ6Z3L1"
       });
       getAnalytics(app);
-      const auth = getAuth(app), db = getFirestore(app), storage = getStorage(app);
+      const auth = getAuth(app), db = getFirestore(app);
       const authGate = document.getElementById("auth-gate"), appContent = document.getElementById("app-content"), loginForm = document.getElementById("login-form"), loginError = document.getElementById("login-error");
       let unsubscribeInspections = null;
 
@@ -1115,12 +1145,7 @@
 
       document.getElementById("logoutBtn").addEventListener("click", function () { signOut(auth); });
 
-      window.uploadInspectionPhotoToStorage = async function (dataUrl, folderPrefix, fileName) {
-        const uid = auth.currentUser ? auth.currentUser.uid : "anon";
-        const r = ref(storage, `inspections/${uid}/${folderPrefix}_${Date.now()}_${fileName}`);
-        await uploadString(r, dataUrl, "data_url", { contentType: "image/jpeg" });
-        return await getDownloadURL(r);
-      };
+
 
       window.saveUserProfileToFirestore = async function (profileData) {
         if (!auth.currentUser) return;
