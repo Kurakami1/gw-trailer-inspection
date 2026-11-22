@@ -606,7 +606,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             'use strict';
 
-            var BASE_STORAGE_KEY = 'gw_inspection_settings_v5';
+            var BASE_STORAGE_KEY = 'gw_inspection_settings_v6';
             var DEFAULT_ROUTES = ['GESWIETBI', 'GESSTBTBI', 'GESSILTBI'];
 
             var DAMAGE_OPTIONS = [
@@ -674,12 +674,11 @@
 
             var selectedVehicleType = 'ტენტი';
             var checklistState = {};
-            var uploadedPhotos = []; // { name, dataUrl, width, height, url }
+            var uploadedPhotos = [];
             var sharedInspections = [];
             var localInspections = [];
             var activeHistoryFilter = 'all';
 
-            // Signature Canvas state
             var sigCanvas = document.getElementById('signatureCanvas');
             var sigCtx = sigCanvas ? sigCanvas.getContext('2d') : null;
             var isDrawing = false;
@@ -690,7 +689,31 @@
                 return BASE_STORAGE_KEY + '_' + uid;
             }
 
-            // --- Toast Notification Helper ---
+            function withTimeout(promise, ms, errMsg) {
+                return new Promise(function (resolve, reject) {
+                    var settled = false;
+                    var timer = setTimeout(function () {
+                        if (!settled) {
+                            settled = true;
+                            reject(new Error(errMsg || 'დრო ამოიწურა'));
+                        }
+                    }, ms);
+                    Promise.resolve(promise).then(function (val) {
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(timer);
+                            resolve(val);
+                        }
+                    }, function (err) {
+                        if (!settled) {
+                            settled = true;
+                            clearTimeout(timer);
+                            reject(err);
+                        }
+                    });
+                });
+            }
+
             var toastTimer = null;
             function showToast(message) {
                 var box = document.getElementById('toastBox');
@@ -701,14 +724,13 @@
                 if (toastTimer) clearTimeout(toastTimer);
                 toastTimer = setTimeout(function () {
                     box.classList.add('hidden');
-                }, 3500);
+                }, 3800);
             }
 
             document.getElementById('closeToastBtn').addEventListener('click', function () {
                 document.getElementById('toastBox').classList.add('hidden');
             });
 
-            // --- Load & Save Settings ---
             function loadSettings() {
                 var profile = window.currentUserProfile || {};
                 try {
@@ -841,7 +863,6 @@
                 renderInspectionHistory();
             };
 
-            // --- Routes Management ---
             function renderRoutesDropdown() {
                 var select = document.getElementById('selectDirection');
                 var prev = select.value;
@@ -895,7 +916,6 @@
                 inp.value = '';
             });
 
-            // --- Settings Modal Open/Close ---
             function openSettingsModal() {
                 var modal = document.getElementById('settingsModal');
                 modal.classList.remove('hidden');
@@ -920,7 +940,6 @@
             document.getElementById('reminderSettingsBtn').addEventListener('click', openSettingsModal);
             document.getElementById('closeSettingsBtn').addEventListener('click', closeSettingsModal);
 
-            // --- Signature Pad Logic ---
             function initSignaturePadDimensions() {
                 if (!sigCanvas) return;
                 var rect = sigCanvas.getBoundingClientRect();
@@ -998,7 +1017,6 @@
                 sigModified = false;
             });
 
-            // Logo Upload in Settings
             document.getElementById('uploadLogoTriggerBtn').addEventListener('click', function () {
                 document.getElementById('hiddenLogoInput').click();
             });
@@ -1020,7 +1038,6 @@
                 document.getElementById('cfgLogoPreview').innerHTML = '<span class="font-extrabold text-xs text-slate-800">Gebrüder Weiss</span>';
             });
 
-            // Save Settings Button
             document.getElementById('saveSettingsBtn').addEventListener('click', function () {
                 settings.inspectorName = document.getElementById('cfgInspectorName').value.trim();
                 settings.inspectorPos = document.getElementById('cfgInspectorPos').value.trim();
@@ -1038,7 +1055,6 @@
                 }
             });
 
-            // --- Dynamic Checklist Renderer: Green Check Box + Damage Dropdown ---
             function renderDynamicChecklist() {
                 var items = CATEGORY_CHECKLISTS[selectedVehicleType] || CATEGORY_CHECKLISTS['ტენტი'];
                 var container = document.getElementById('checklistRows');
@@ -1126,7 +1142,6 @@
                 });
             }
 
-            // --- Main Form Controls ---
             var dateTimeManuallyChanged = false;
             var dateTimeInput = document.getElementById('inputDateTime');
             dateTimeInput.addEventListener('change', function () {
@@ -1226,7 +1241,6 @@
                 showToast('ფორმა გასუფთავდა');
             });
 
-            // --- High-Clarity + Compact Size Photo Processor (maxDim=1600px, quality=0.78) ---
             function processImageToCanvas(file, maxDim, quality, callback) {
                 var reader = new FileReader();
                 reader.onload = function (evt) {
@@ -1350,10 +1364,12 @@
                 });
             }
 
+            // Safe photo upload with timeout so buttons never hang forever
             function ensurePhotosUploaded() {
                 if (uploadedPhotos.length === 0) return Promise.resolve([]);
                 if (typeof window.uploadInspectionPhotoToStorage !== 'function') {
-                    return Promise.reject(new Error('Storage სერვისი არ არის მზად'));
+                    showToast('Storage სერვისი მიუწვდომელია — PDF შეიქმნება ფოტო ბმულის გარეშე');
+                    return Promise.resolve([]);
                 }
 
                 var truck = sanitizePlate(document.getElementById('inputTruckPlate').value) || 'REPORT';
@@ -1361,16 +1377,29 @@
                     var fileName = 'Foto_' + (idx + 1) + '.jpg';
                     photo.name = fileName;
                     if (photo.url) return Promise.resolve(photo.url);
-                    return window.uploadInspectionPhotoToStorage(photo.dataUrl, truck, fileName).then(function (downloadUrl) {
-                        photo.url = downloadUrl;
-                        return downloadUrl;
+                    return withTimeout(
+                        window.uploadInspectionPhotoToStorage(photo.dataUrl, truck, fileName),
+                        12000,
+                        'ფოტოს ატვირთვას დიდი დრო დასჭირდა'
+                    ).then(function (downloadUrl) {
+                        photo.url = downloadUrl || '';
+                        return photo.url;
+                    }).catch(function (err) {
+                        console.warn('Photo upload skipped/timed out:', err);
+                        photo.url = '';
+                        return '';
                     });
                 });
 
-                return Promise.all(tasks);
+                return Promise.all(tasks).then(function (urls) {
+                    var anyUploaded = urls.some(function (u) { return Boolean(u); });
+                    if (!anyUploaded) {
+                        showToast('ფოტოს ბმული ვერ შეიქმნა — PDF მზადდება მაინც');
+                    }
+                    return urls;
+                });
             }
 
-            // --- Populate A4 Sheet & Generate 1-Page PDF with Text-Only Links ---
             function fillA4SheetData() {
                 if (!dateTimeManuallyChanged) {
                     setDefaultDateTime();
@@ -1436,17 +1465,17 @@
                 var notesVal = document.getElementById('inputNotes').value.trim();
                 document.getElementById('pdfNotes').textContent = notesVal || 'შენიშვნების გარეშე';
 
-                // Plain underlined text links on PDF (no button/box styling)
                 var linksSection = document.getElementById('pdfPhotosLinkSection');
                 var linksContainer = document.getElementById('pdfPhotoLinksContainer');
                 linksContainer.innerHTML = '';
 
-                if (uploadedPhotos.length > 0) {
+                var validPhotos = uploadedPhotos.filter(function (p) { return Boolean(p && p.url); });
+                if (validPhotos.length > 0) {
                     linksSection.style.display = 'block';
-                    uploadedPhotos.forEach(function (photo, idx) {
-                        var fileName = 'Foto_' + (idx + 1) + '.jpg';
+                    validPhotos.forEach(function (photo, idx) {
+                        var fileName = photo.name || ('Foto_' + (idx + 1) + '.jpg');
                         var textLink = document.createElement('span');
-                        textLink.setAttribute('data-photo-link-idx', idx);
+                        textLink.setAttribute('data-photo-url', photo.url);
                         textLink.style.cssText = 'color: #1d4ed8; font-size: 11.5px; font-weight: 800; text-decoration: underline; cursor: pointer;';
                         textLink.textContent = fileName;
                         linksContainer.appendChild(textLink);
@@ -1478,11 +1507,11 @@
                     var sheet = document.getElementById('a4-sheet');
                     var sheetRect = sheet.getBoundingClientRect();
 
-                    var linkSpans = Array.prototype.slice.call(sheet.querySelectorAll('[data-photo-link-idx]'));
+                    var linkSpans = Array.prototype.slice.call(sheet.querySelectorAll('[data-photo-url]'));
                     var linkBoxesMm = linkSpans.map(function (span) {
                         var r = span.getBoundingClientRect();
                         return {
-                            idx: parseInt(span.getAttribute('data-photo-link-idx'), 10),
+                            url: span.getAttribute('data-photo-url'),
                             x: ((r.left - sheetRect.left) / sheetRect.width) * 210,
                             y: ((r.top - sheetRect.top) / sheetRect.height) * 297,
                             w: (r.width / sheetRect.width) * 210,
@@ -1490,12 +1519,14 @@
                         };
                     });
 
-                    return window.html2canvas(sheet, {
-                        scale: 2.1,
+                    var canvasPromise = window.html2canvas(sheet, {
+                        scale: 1.6,
                         useCORS: true,
                         backgroundColor: '#ffffff',
                         logging: false
-                    }).then(function (baseCanvas) {
+                    });
+
+                    return withTimeout(canvasPromise, 15000, 'PDF გამოსახულების შექმნას დიდი დრო დასჭირდა').then(function (baseCanvas) {
                         var jsPDFConstructor = window.jspdf.jsPDF;
                         var pdf = new jsPDFConstructor({
                             orientation: 'portrait',
@@ -1504,13 +1535,12 @@
                             compress: true
                         });
 
-                        var baseImgData = baseCanvas.toDataURL('image/jpeg', 0.88);
+                        var baseImgData = baseCanvas.toDataURL('image/jpeg', 0.82);
                         pdf.addImage(baseImgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
                         linkBoxesMm.forEach(function (box) {
-                            var photo = uploadedPhotos[box.idx];
-                            if (photo && photo.url) {
-                                pdf.link(box.x, box.y, box.w, box.h, { url: photo.url, newWindow: true });
+                            if (box.url) {
+                                pdf.link(box.x, box.y, box.w, box.h, { url: box.url, newWindow: true });
                             }
                         });
 
@@ -1544,7 +1574,6 @@
                 return list;
             }
 
-            // --- Local PDF Archive (IndexedDB) + Merged Shared Cloud History ---
             var historyDbPromise = null;
             var historyPage = 0;
             var historyPageSize = 20;
@@ -1571,9 +1600,11 @@
             function buildReportPayload(fileName) {
                 var dateValue = document.getElementById('inputDateTime').value || '';
                 var damages = collectDamagesSummary();
-                var photoUrls = uploadedPhotos.map(function (p, i) {
-                    return { name: 'Foto_' + (i + 1) + '.jpg', url: p.url || '' };
-                });
+                var photoUrls = uploadedPhotos
+                    .filter(function (p) { return Boolean(p && p.url); })
+                    .map(function (p, i) {
+                        return { name: p.name || ('Foto_' + (i + 1) + '.jpg'), url: p.url };
+                    });
 
                 return {
                     fileName: fileName,
@@ -2109,6 +2140,7 @@
             // Button 1: Direct PDF Download
             var downloadPdfBtn = document.getElementById('downloadPdfBtn');
             downloadPdfBtn.addEventListener('click', function () {
+                if (downloadPdfBtn.disabled) return;
                 var fileName = getOutputFileName();
                 var origHtml = downloadPdfBtn.innerHTML;
                 downloadPdfBtn.disabled = true;
@@ -2130,6 +2162,7 @@
             // Button 2: Send via Email / Mobile Share
             var sendEmailPdfBtn = document.getElementById('sendEmailPdfBtn');
             sendEmailPdfBtn.addEventListener('click', function () {
+                if (sendEmailPdfBtn.disabled) return;
                 var fileName = getOutputFileName();
                 var origHtml = sendEmailPdfBtn.innerHTML;
                 sendEmailPdfBtn.disabled = true;
@@ -2143,7 +2176,7 @@
                     var pdfFile = new File([blob], fileName, { type: 'application/pdf' });
 
                     if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-                        navigator.share({
+                        return navigator.share({
                             files: [pdfFile],
                             title: 'Gebrüder Weiss - ' + fileName,
                             text: 'ინსპექტირების აქტი: ' + truck + ' / ' + trailer + ' (' + dir + ')'
@@ -2180,7 +2213,6 @@
                 window.location.href = 'mailto:' + recipient + '?subject=' + subject + '&body=' + body;
             }
 
-            // --- Initialize App ---
             loadSettings();
             setDefaultDateTime();
             renderDynamicChecklist();
