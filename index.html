@@ -54,6 +54,7 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-1.5 shrink-0">
+                    <button type="button" id="languageToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-2 rounded-xl text-[11px] font-extrabold border border-slate-600" aria-label="Switch language">EN</button>
                     <button type="button" id="openSettingsBtn" class="bg-slate-800 hover:bg-slate-700 active:scale-95 transition text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer border border-slate-700"><i class="fa-solid fa-gear gw-orange-text"></i><span>პროფილი</span></button>
                     <button type="button" id="logoutBtn" title="გასვლა" class="bg-slate-800 hover:bg-red-600 active:scale-95 transition text-white px-2.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center cursor-pointer border border-slate-700"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
@@ -382,6 +383,47 @@
             var historyPageSize = 20;
             var historySearchTimer = null;
             var toastTimer = null;
+            var currentLanguage = (function(){ try { return localStorage.getItem('gw_app_language') === 'en' ? 'en' : 'ka'; } catch(e) { return 'ka'; } })();
+            var translations = {
+                'ტრაილერის ინსპექტირება':'Trailer Inspection','სწრაფი დათვალიერების აქტი':'Vehicle Inspection Report','პროფილი':'Profile','გასვლა':'Log out',
+                'შეავსეთ პროფილი:':'Complete your profile:','სახელი, თანამდებობა და ხელმოწერა.':'name, position and signature.','შევსება':'Complete',
+                '1. რეისი და ტრანსპორტის ტიპი':'1. Trip & vehicle type','გასუფთავება':'Reset','თარიღი / დრო *':'Date / time *','მიმართულება *':'Direction *','მანქანის კატეგორია *':'Vehicle category *',
+                'ტენტი':'Curtainsider','მაცივარი':'Refrigerated','ავტომატარებელი':'Road train','კონტეინერი':'Container','სატვირთო':'Truck','მიკროავტობუსი':'Van',
+                '2. ტრანსპორტი, ლუქი და მძღოლი':'2. Vehicle, seal & driver','მანქანის ნომერი *':'Truck registration *','მისაბმელის ნომერი *':'Trailer registration *','კონტეინერის ნომერი':'Container number','ლუქის ნომერი / ნომრები':'Seal number(s)',
+                'მძღოლის სახელი და გვარი':'Driver full name','სახელი გვარი':'First name Last name','მძღოლის ტელეფონი':'Driver phone','მძღოლის ისტორია':'Driver history',
+                '3. კომპონენტები —':'3. Components —','✓ პწიჩკა ან დაზიანება':'✓ Mark as OK or select damage','დაზიანება...':'Select damage...','დამატებითი შენიშვნა':'Additional notes','დამატებითი დეტალები (სურვილისამებრ)...':'Additional details (optional)...',
+                '4. ფოტოფიქსაცია (მაქს. 4)':'4. Photos (max. 4)','ფოტოს გადაღება ან არჩევა':'Take or choose photos','PDF-ში გამოჩნდება მხოლოდ ფოტოს ბმული — ფოტო ცალკე ფანჯარაში გაიხსნება':'Photos are embedded in the PDF and linked from the report.',
+                'აქტების ისტორია (საერთო გუნდური + ლოკალური)':'Report history (team + local)','ძებნა: მძღოლი, ტელეფონი, მანქანა, მისაბმელი, კონტეინერი, მიმართულება...':'Search: driver, phone, truck, trailer, container, direction...',
+                'ყველა':'All','საერთო (Cloud)':'Team (Cloud)','ლოკალური PDF':'Local PDF','დაზიანებით':'With damage','მძღოლის შემოსვლების დოსიე':'Driver visit history','შემოსვლა':'Visits','სარეზერვო ZIP':'Backup ZIP','ლოკალური გასუფთავება':'Clear local history',
+                'ბრაუზერის საცავი':'Browser storage','მოწმდება...':'Checking...','ისტორია იტვირთება...':'Loading history...','წინა':'Previous','შემდეგი':'Next','გვერდი':'Page',
+                'ინსპექტორი':'Inspector','არ არის მითითებული':'Not specified','ანგარიში: —':'Account: —','მიმღები: არ არის მითითებული':'Recipient: not specified','ხელმოწერა':'Signature','ცარიელია':'is empty',
+                'PDF ჩამოტვირთვა':'Download PDF','გაგზავნა მეილზე (Gmail / Share)':'Send by email (Gmail / Share)','პროფილი და პარამეტრები':'Profile & settings',
+                '1. ინსპექტორის პროფილი':'1. Inspector profile','ავტორიზებული ანგარიშის მეილი':'Signed-in email','ინსპექტორის სახელი და გვარი *':'Inspector full name *','მაგ: ალექსანდრე შალამბერიძე':'e.g. Alex Smith',
+                'თანამდებობა / პოზიცია *':'Job title / position *','მიმღების ელ-ფოსტა *':'Recipient email *','2. ხელმოწერა':'2. Signature','გასუფთავება':'Clear','3. კომპანიის ლოგო':'3. Company logo','სტანდარტული':'Default','ლოგოს ატვირთვა':'Upload logo','4. მიმართულებების მართვა':'4. Manage directions',
+                'შესვლა':'Sign in','ელ-ფოსტა':'Email','პაროლი':'Password','ნამდვილად გსურთ ლოკალური PDF არქივის გასუფთავება?':'Are you sure you want to clear the local PDF archive?',
+                'ფოტო ბმულები (დააჭირეთ ნაწერს ახალ გვერდზე გასახსნელად):':'Embedded photos (select a link to open the attachment):','მძღოლი:':'Driver:','მძღოლის ტელეფონი:':'Driver phone:','მანქანის ნომერი:':'Truck registration:','მისაბმელის ნომერი:':'Trailer registration:',
+                'კომპონენტი':'Component','მონიშვნა':'Check','დაზიანება / სტატუსი':'Damage / status','დამატებითი შენიშვნა:':'Additional notes:','შენიშვნების გარეშე':'No additional notes','მიმართულება:':'Direction:','მანქანის კატეგორია:':'Vehicle category:','ლუქის ნომერი / ნომრები:':'Seal number(s):',
+                'დათვალიერება ჩაატარა / პასუხისმგებელი პირი:':'Inspected by / responsible person:','ხელმოწერა:':'Signature:','შეცდომა:':'Error:','PDF ბიბლიოთეკები ჯერ იტვირთება':'PDF libraries are still loading','PDF დანართების ბიბლიოთეკა ჯერ იტვირთება':'PDF attachment library is still loading',
+                'სატრანსპორტო საშუალების გარეგანი აღწერის აქტი':'Vehicle Exterior Inspection Report','თარიღი / დრო:':'Date / time:','მანქანის კატეგორია:':'Vehicle category:','კონტეინერის ნომერი:':'Container number:','დაზიანების გარეშე':'No damage','გახეული':'Torn','გაჭრილი':'Cut','გახვრეტილი':'Punctured','გატეხილი':'Broken','გაღუნული':'Bent','დეფორმირებული':'Deformed','დაბზარული':'Cracked','კოროზია':'Corrosion',
+                '1. ტენტი':'1. Curtain','2. ტენტის თოკი':'2. Curtain rope','3. ღვედები':'3. Straps','4. ბალთები':'4. Buckles','5. კარკასი':'5. Frame','6. უკანა კარები':'6. Rear doors','1. კედლები':'1. Walls','2. სახურავი':'2. Roof','3. კარები':'3. Doors','4. საკეტები':'4. Locks','5. კუთხეები':'5. Corners','1. პირველი მისაბმელი':'1. First trailer','2. მეორე მისაბმელი':'2. Second trailer','3. ტენტები':'3. Tarpaulins','4. თოკები':'4. Ropes','1. ბორტები':'1. Side panels','3. მინები':'3. Windows',
+                'შენახვა':'Save','შევსება':'Complete','სტანდარტული':'Default','ლოგოს ატვირთვა':'Upload logo','ახალი კოდი (მაგ: GEKUTTBI)':'New code (e.g. GEKUTTBI)','დამატება':'Add','სარეზერვო ZIP':'Backup ZIP','ლოკალური გასუფთავება':'Clear local history','ბრაუზერის საცავი':'Browser storage','მოწმდება...':'Checking...','ისტორია იტვირთება...':'Loading history...','გვერდი':'Page','შეტყობინება':'Notification','შესვლა':'Sign in','ელ-ფოსტა':'Email','პაროლი':'Password','ფოტო ბმულები (დააჭირეთ ნაწერს ახალ გვერდზე გასახსნელად):':'Photo attachments (tap a link to open):','შენიშვნების გარეშე':'No additional notes','მიმართულება:':'Direction:','მძღოლი:':'Driver:','კომპონენტი':'Component','მონიშვნა':'Check','დაზიანება / სტატუსი':'Damage / status','დამატებითი შენიშვნა:':'Additional notes:','მონიშნულია':'Checked','დაზიანება...':'Select damage...','ტენტი':'Curtainsider','მაცივარი':'Refrigerated','ავტომატარებელი':'Car transporter','კონტეინერი':'Container','სატვირთო':'Truck','მიკროავტობუსი':'Van','მძღოლის ისტორია':'Driver history','შემოსვლები':'Visits','მაქსიმუმ 4 ფოტოს დამატებაა შესაძლებელი':'You can add up to 4 photos','ფორმა გასუფთავდა':'Form cleared','პროფილი შენახულია!':'Profile saved!','ფოტო ბმულები (დააჭირეთ ნაწერს ახალ გვერდზე გასახსნელად):':'Photo attachments (tap a link to open):'
+            };
+            function tr(value) { return currentLanguage === 'en' ? (translations[value] || value) : value; }
+            function applyLanguage() {
+                var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), nodes=[];
+                while(walker.nextNode()) nodes.push(walker.currentNode);
+                nodes.forEach(function(n){ var raw=n.nodeValue, trimmed=raw.trim(); if(!trimmed) return; if(currentLanguage==='en' && translations[trimmed]) n.nodeValue=raw.replace(trimmed, translations[trimmed]); else if(currentLanguage==='ka') { var reverse=Object.keys(translations).find(function(k){return translations[k]===trimmed;}); if(reverse) n.nodeValue=raw.replace(trimmed, reverse); } });
+                document.querySelectorAll('input[placeholder],textarea[placeholder]').forEach(function(el){ var v=el.getAttribute('placeholder'); if(currentLanguage==='en' && translations[v]) el.setAttribute('placeholder',translations[v]); else if(currentLanguage==='ka'){ var k=Object.keys(translations).find(function(x){return translations[x]===v;}); if(k) el.setAttribute('placeholder',k); }});
+                var toggle=document.getElementById('languageToggleBtn'); if(toggle) toggle.textContent=currentLanguage==='ka'?'EN':'ქარ';
+                document.documentElement.lang=currentLanguage;
+                if(typeof renderDynamicChecklist==='function') renderDynamicChecklist(true);
+            }
+            var langToggle = document.getElementById('languageToggleBtn');
+            if(langToggle) langToggle.addEventListener('click',function(){ currentLanguage=currentLanguage==='ka'?'en':'ka'; try{localStorage.setItem('gw_app_language',currentLanguage);}catch(e){} applyLanguage(); });
+            function capitalizeName(value) {
+                return String(value||'').trim().toLocaleLowerCase().replace(/(^|[\s'-])([\p{L}])/gu,function(_,sep,ch){ return sep+ch.toLocaleUpperCase(); });
+            }
+            ['inputDriverName','cfgInspectorName'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.addEventListener('blur',function(){el.value=capitalizeName(el.value);}); el.addEventListener('change',function(){el.value=capitalizeName(el.value);}); }});
 
             var sigCanvas = document.getElementById('signatureCanvas');
             var sigCtx = sigCanvas ? sigCanvas.getContext('2d') : null;
@@ -558,28 +600,29 @@
             });
             document.getElementById('resetLogoBtn').addEventListener('click', function () { settings.logoDataUrl = ''; localStorage.removeItem('gw_shared_company_logo'); document.getElementById('cfgLogoPreview').innerHTML = '<span class="font-extrabold text-xs text-slate-800">Gebrüder Weiss</span>'; });
             document.getElementById('saveSettingsBtn').addEventListener('click', function () {
-                settings.inspectorName = document.getElementById('cfgInspectorName').value.trim();
+                settings.inspectorName = capitalizeName(document.getElementById('cfgInspectorName').value.trim()); document.getElementById('cfgInspectorName').value = settings.inspectorName;
                 settings.inspectorPos = document.getElementById('cfgInspectorPos').value.trim();
                 settings.recipientEmail = document.getElementById('cfgRecipientEmail').value.trim();
                 if (sigModified && sigCanvas) { settings.signatureDataUrl = sigCanvas.toDataURL('image/png'); sigModified = false; }
                 if (saveSettingsToStorage()) { syncSettingsToUI(); closeSettingsModal(); showToast('პროფილი შენახულია!'); }
             });
 
-            function renderDynamicChecklist() {
+            function renderDynamicChecklist(preserveState) {
+                var previousState = preserveState ? JSON.parse(JSON.stringify(checklistState)) : {};
                 var items = CATEGORY_CHECKLISTS[selectedVehicleType] || CATEGORY_CHECKLISTS['ტენტი'];
                 var container = document.getElementById('checklistRows');
-                document.getElementById('checklistCategoryLabel').textContent = selectedVehicleType;
-                container.innerHTML = ''; checklistState = {};
+                document.getElementById('checklistCategoryLabel').textContent = tr(selectedVehicleType);
+                container.innerHTML = ''; if (!preserveState) checklistState = {};
 
                 items.forEach(function (item) {
-                    checklistState[item.key] = { checked: true, damage: '' };
+                    checklistState[item.key] = previousState[item.key] || { checked: true, damage: '' };
                     var row = document.createElement('div'); row.className = 'flex items-center justify-between px-3 py-2.5 bg-white gap-2';
-                    var titleEl = document.createElement('div'); titleEl.className = 'font-bold text-xs sm:text-sm text-slate-800 min-w-0 flex-1 truncate'; titleEl.textContent = item.label;
+                    var titleEl = document.createElement('div'); titleEl.className = 'font-bold text-xs sm:text-sm text-slate-800 min-w-0 flex-1 truncate'; titleEl.textContent = currentLanguage === 'en' ? ({'1. ტენტი':'1. Curtainsider cover','2. ტენტის თოკი':'2. Tarp rope','3. ღვედები':'3. Straps','4. ბალთები':'4. Buckles','5. კარკასი':'5. Frame','6. უკანა კარები':'6. Rear doors','1. კედლები':'1. Walls','2. სახურავი':'2. Roof','3. კარები':'3. Doors','4. საკეტები':'4. Locks','5. კუთხეები':'5. Corners','1. პირველი მისაბმელი':'1. First trailer','2. მეორე მისაბმელი':'2. Second trailer','3. ტენტები':'3. Tarpaulins','4. თოკები':'4. Ropes','1. ბორტები':'1. Side panels','3. ტენტი':'3. Cover','3. მინები':'3. Windows'}[item.label] || item.label) : item.label;
                     var controls = document.createElement('div'); controls.className = 'flex items-center gap-2 shrink-0';
 
                     var checkBtn = document.createElement('button'); checkBtn.type = 'button'; checkBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
                     var dmgSelect = document.createElement('select');
-                    dmgSelect.innerHTML = '<option value="">დაზიანება...</option>' + DAMAGE_OPTIONS.map(function (d) { return '<option value="' + d + '">' + d + '</option>'; }).join('');
+                    dmgSelect.innerHTML = '<option value="">' + (currentLanguage==='en'?'Select damage...':'დაზიანება...') + '</option>' + DAMAGE_OPTIONS.map(function (d) { var en=({'გახეული':'Torn','გაჭრილი':'Cut','გახვრეტილი':'Punctured','გატეხილი':'Broken','გაღუნული':'Bent','დეფორმირებული':'Deformed','დაბზარული':'Cracked','კოროზია':'Corrosion'}[d]||d); return '<option value="' + d + '">' + (currentLanguage==='en'?en:d) + '</option>'; }).join('');
 
                     var syncVisuals = function () {
                         var st = checklistState[item.key];
@@ -590,6 +633,7 @@
                             ? 'rounded-xl border-2 border-red-400 bg-red-50 px-2.5 py-2 text-xs font-extrabold text-red-800 focus:outline-none focus:border-red-600 max-w-[140px]'
                             : 'rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:border-orange-500 max-w-[140px]';
                     };
+                    dmgSelect.value = checklistState[item.key].damage || '';
                     syncVisuals();
 
                     checkBtn.addEventListener('click', function () { var st = checklistState[item.key]; st.checked = !st.checked; if (st.checked) { st.damage = ''; dmgSelect.value = ''; } syncVisuals(); });
@@ -667,7 +711,7 @@
             hiddenPhotoInput.addEventListener('change', function (e) {
                 var files = Array.prototype.slice.call(e.target.files || []).slice(0, 4 - uploadedPhotos.length);
                 files.forEach(function (f) {
-                    processImageToCanvas(f, 2000, 0.88, function (p) {
+                    processImageToCanvas(f, 2400, 0.94, function (p) {
                         if (uploadedPhotos.length < 4) { p.name = 'Foto_' + (uploadedPhotos.length + 1) + '.jpg'; p.url = ''; uploadedPhotos.push(p); renderPhotoThumbnails(); }
                     });
                 });
@@ -715,12 +759,15 @@
 
                 document.getElementById('pdfDateTime').textContent = formattedDt;
                 document.getElementById('pdfDirection').textContent = document.getElementById('selectDirection').value || '—';
-                document.getElementById('pdfVehicleType').textContent = selectedVehicleType;
+                document.getElementById('pdfVehicleType').textContent = tr(selectedVehicleType);
                 document.getElementById('pdfTruckPlate').textContent = document.getElementById('inputTruckPlate').value.trim() || '—';
                 document.getElementById('pdfTrailerPlate').textContent = document.getElementById('inputTrailerPlate').value.trim() || '—';
                 document.getElementById('pdfContainerNumber').textContent = document.getElementById('inputContainerNumber').value.trim() || '—';
                 document.getElementById('pdfContainerRow').style.display = selectedVehicleType === 'კონტეინერი' ? 'table-row' : 'none';
-                document.getElementById('pdfDriverName').textContent = driverNameInput.value.trim() || '—';
+                driverNameInput.value = capitalizeName(driverNameInput.value);
+                document.getElementById('cfgInspectorName').value = capitalizeName(document.getElementById('cfgInspectorName').value);
+                settings.inspectorName = capitalizeName(settings.inspectorName);
+                document.getElementById('pdfDriverName').textContent = capitalizeName(driverNameInput.value) || '—';
                 document.getElementById('pdfDriverPhone').textContent = driverPhoneInput.value.trim() || '—';
                 document.getElementById('pdfSealNumber').textContent = document.getElementById('inputSealNumber').value.trim() || '—';
 
@@ -728,11 +775,11 @@
                 var items = CATEGORY_CHECKLISTS[selectedVehicleType] || CATEGORY_CHECKLISTS['ტენტი'];
                 items.forEach(function (item, idx) {
                     var st = checklistState[item.key] || { checked: true, damage: '' };
-                    var markHtml = st.checked ? '<span style="background: #dcfce7; color: #166534; padding: 2px 10px; border-radius: 4px; border: 1px solid #86efac;">✓ მონიშნულია</span>' : '<span style="background: #f1f5f9; color: #475569; padding: 2px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">—</span>';
-                    var dmgHtml = st.damage ? '<span style="background: #fee2e2; color: #991b1b; padding: 2px 9px; border-radius: 4px; border: 1px solid #fca5a5; font-weight: 800;">' + st.damage + '</span>' : '<span style="color: #64748b;">დაზიანების გარეშე</span>';
+                    var markHtml = st.checked ? '<span style="background: #dcfce7; color: #166534; padding: 2px 10px; border-radius: 4px; border: 1px solid #86efac;">✓ ' + (currentLanguage==='en'?'OK':'მონიშნულია') + '</span>' : '<span style="background: #f1f5f9; color: #475569; padding: 2px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">—</span>';
+                    var dmgEn=({'გახეული':'Torn','გაჭრილი':'Cut','გახვრეტილი':'Punctured','გატეხილი':'Broken','გაღუნული':'Bent','დეფორმირებული':'Deformed','დაბზარული':'Cracked','კოროზია':'Corrosion'}[st.damage]||st.damage); var dmgHtml = st.damage ? '<span style="background: #fee2e2; color: #991b1b; padding: 2px 9px; border-radius: 4px; border: 1px solid #fca5a5; font-weight: 800;">' + (currentLanguage==='en'?dmgEn:st.damage) + '</span>' : '<span style="color: #64748b;">' + (currentLanguage==='en'?'No damage':'დაზიანების გარეშე') + '</span>';
                     var tr = document.createElement('tr');
                     if (idx % 2 === 1) tr.style.background = '#f8fafc';
-                    tr.innerHTML = '<td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 700;">' + item.label + '</td><td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-weight: 800;">' + markHtml + '</td><td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-size: 10px;">' + dmgHtml + '</td>';
+                    var itemLabel = currentLanguage==='en' ? ({'1. ტენტი':'1. Curtainsider cover','2. ტენტის თოკი':'2. Tarp rope','3. ღვედები':'3. Straps','4. ბალთები':'4. Buckles','5. კარკასი':'5. Frame','6. უკანა კარები':'6. Rear doors','1. კედლები':'1. Walls','2. სახურავი':'2. Roof','3. კარები':'3. Doors','4. საკეტები':'4. Locks','5. კუთხეები':'5. Corners','1. პირველი მისაბმელი':'1. First trailer','2. მეორე მისაბმელი':'2. Second trailer','3. ტენტები':'3. Tarpaulins','4. თოკები':'4. Ropes','1. ბორტები':'1. Side panels','3. ტენტი':'3. Cover','3. მინები':'3. Windows'}[item.label]||item.label) : item.label; tr.innerHTML = '<td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 700;">' + itemLabel + '</td><td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-weight: 800;">' + markHtml + '</td><td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-size: 10px;">' + dmgHtml + '</td>';
                     pdfChkBody.appendChild(tr);
                 });
 
@@ -746,15 +793,15 @@
                     validPhotos.forEach(function (p, i) {
                         var link = document.createElement('span');
                         link.setAttribute('data-embedded-photo-index', String(i));
-                        link.style.cssText = 'display:inline-block;color:#d95f18;font-size:11.5px;font-weight:800;text-decoration:underline;padding:3px 2px;';
-                        link.textContent = '↗ ' + (p.name || ('Foto_' + (i + 1) + '.jpg'));
+                        link.style.cssText = 'display:inline-block;color:#c94f0b;font-size:11.5px;font-weight:800;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;padding:5px 9px;border:1px solid #f4b183;border-radius:5px;background:#fff7ed;';
+                        link.textContent = currentLanguage === 'en' ? ('OPEN PHOTO ' + (i + 1) + ' ↗') : ('ფოტოს გახსნა ' + (i + 1) + ' ↗');
                         linksContainer.appendChild(link);
                     });
                 } else {
                     linksSection.style.display = 'none';
                 }
 
-                document.getElementById('pdfInspectorName').textContent = settings.inspectorName || '—';
+                document.getElementById('pdfInspectorName').textContent = capitalizeName(settings.inspectorName) || '—';
                 document.getElementById('pdfInspectorPos').textContent = settings.inspectorPos || 'Gebrüder Weiss';
                 document.getElementById('pdfInspectorEmail').textContent = settings.inspectorEmail || '';
                 var pdfSigImg = document.getElementById('pdfSignatureImg');
@@ -779,11 +826,11 @@
                         var r = el.getBoundingClientRect();
                         return { index: Number(el.getAttribute('data-embedded-photo-index')), x: ((r.left - rect.left) / rect.width) * 210, y: ((r.top - rect.top) / rect.height) * 297, w: (r.width / rect.width) * 210, h: (r.height / rect.height) * 297 };
                     });
-                    return window.html2canvas(sheet, { scale: 1.35, useCORS: true, backgroundColor: '#ffffff', logging: false }).then(function (canvas) {
+                    return window.html2canvas(sheet, { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 15000 }).then(function (canvas) {
                         if (!canvas) throw new Error('PDF რენდერი ვერ მოესწრო');
                         var pdf = new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true, putOnlyUsedFonts:true });
                         pdf.setProperties({ title:'Gebrüder Weiss - Inspection Report', subject:'Vehicle inspection report with embedded photo attachments', creator:'GW Inspection' });
-                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.78), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
                         var baseBlob = pdf.output('blob');
                         if (!uploadedPhotos.length) return baseBlob;
 
@@ -798,32 +845,38 @@
                                     creationDate: new Date(), modificationDate: new Date()
                                 });
                             }
-                            // Link annotations point to the embedded PDF file specifications.
-                            // The visible labels remain ordinary text on the single A4 page.
-                            // PDF name-tree entries are optional/indirect. Use lookupMaybe so
-                            // pdf-lib does not throw a typed-instance error when a key is absent.
+                            // Resolve embedded file specifications from the PDF name tree.
                             var namesDict = doc.catalog.lookupMaybe(PDFLib.PDFName.of('Names'), PDFLib.PDFDict);
                             var embeddedDict = namesDict && namesDict.lookupMaybe(PDFLib.PDFName.of('EmbeddedFiles'), PDFLib.PDFDict);
                             var nameArray = embeddedDict && embeddedDict.lookupMaybe(PDFLib.PDFName.of('Names'), PDFLib.PDFArray);
                             var fileSpecs = {};
                             if (nameArray) {
                                 for (var n = 0; n + 1 < nameArray.size(); n += 2) {
-                                    var specRef = nameArray.get(n + 1);
+                                    var keyObj = nameArray.get(n), specRef = nameArray.get(n + 1);
+                                    var keyName = keyObj && keyObj.decodeText ? keyObj.decodeText() : (keyObj && keyObj.decodeText ? keyObj.decodeText() : '');
                                     var spec = doc.context.lookupMaybe(specRef, PDFLib.PDFDict);
-                                    if (!spec) continue;
-                                    var fileNameObj = spec.lookupMaybe(PDFLib.PDFName.of('UF')) || spec.lookupMaybe(PDFLib.PDFName.of('F'));
-                                    if (fileNameObj && fileNameObj.decodeText) fileSpecs[fileNameObj.decodeText()] = specRef;
+                                    if (spec) {
+                                        var fileNameObj = spec.lookupMaybe(PDFLib.PDFName.of('UF')) || spec.lookupMaybe(PDFLib.PDFName.of('F'));
+                                        var decoded = fileNameObj && fileNameObj.decodeText ? fileNameObj.decodeText() : keyName;
+                                        if (decoded) fileSpecs[decoded] = specRef;
+                                        if (keyName) fileSpecs[keyName] = specRef;
+                                    }
                                 }
                             }
                             photoLinks.forEach(function (link) {
                                 var photo = uploadedPhotos[link.index];
                                 var specRef = photo && fileSpecs[photo.name];
-                                // Keep the photo embedded even if a PDF viewer/library version
-                                // does not expose a name-tree entry for its clickable annotation.
                                 if (!specRef || link.w <= 2 || link.h <= 2) return;
                                 var rectPoints = [link.x * 72 / 25.4, pageHeight - ((link.y + link.h) * 72 / 25.4), (link.x + link.w) * 72 / 25.4, pageHeight - (link.y * 72 / 25.4)];
+                                // Launch the embedded image file when the visible text is tapped.
+                                // The file specification points to the attachment inside this PDF;
+                                // no external URL, Firebase Storage, or separate photo page is used.
                                 var action = doc.context.obj({ S: PDFLib.PDFName.of('Launch'), F: specRef, NewWindow: true });
-                                var annotation = doc.context.obj({ Type: PDFLib.PDFName.of('Annot'), Subtype: PDFLib.PDFName.of('Link'), Rect: rectPoints, Border: [0, 0, 0], A: action, Contents: PDFLib.PDFString.of('Open ' + photo.name) });
+                                var annotation = doc.context.obj({
+                                    Type: PDFLib.PDFName.of('Annot'), Subtype: PDFLib.PDFName.of('Link'),
+                                    Rect: rectPoints, Border: [0, 0, 0], A: action,
+                                    Contents: PDFLib.PDFString.of('Open embedded photo ' + photo.name)
+                                });
                                 page.node.addAnnot(doc.context.register(annotation));
                             });
                             var finalBytes = await doc.save({ useObjectStreams: true, addDefaultPage: false });
@@ -1081,6 +1134,7 @@
                 sendEmailPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>PDF და ფოტო ბმულები მზადდება...</span>';
                 createA4PdfBlob().then(function (blob) {
                     saveReportToHistory(blob, fileName).catch(function () {});
+                    driverNameInput.value = capitalizeName(driverNameInput.value);
                     var truck = document.getElementById('inputTruckPlate').value.trim();
                     var trailer = document.getElementById('inputTrailerPlate').value.trim();
                     var dir = document.getElementById('selectDirection').value;
@@ -1115,7 +1169,7 @@
                 window.location.href = 'mailto:' + to + '?subject=' + subj + '&body=' + body;
             }
 
-            loadSettings(); setDefaultDateTime(); renderDynamicChecklist(); syncSettingsToUI(); updateLiveFileName(); loadLocalAndMergeHistory(); updateHistoryStorage();
+            loadSettings(); setDefaultDateTime(); renderDynamicChecklist(); applyLanguage(); syncSettingsToUI(); updateLiveFileName(); loadLocalAndMergeHistory(); updateHistoryStorage();
         });
     </script>
 
