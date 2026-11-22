@@ -800,19 +800,26 @@
                             }
                             // Link annotations point to the embedded PDF file specifications.
                             // The visible labels remain ordinary text on the single A4 page.
-                            var namesDict = doc.catalog.lookup(PDFLib.PDFName.of('Names'), PDFLib.PDFDict);
-                            var embeddedDict = namesDict && namesDict.lookup(PDFLib.PDFName.of('EmbeddedFiles'), PDFLib.PDFDict);
-                            var nameArray = embeddedDict && embeddedDict.lookup(PDFLib.PDFName.of('Names'), PDFLib.PDFArray);
-                            if (!nameArray) throw new Error('PDF-ში ფოტოების დანართების შექმნა ვერ მოხერხდა');
+                            // PDF name-tree entries are optional/indirect. Use lookupMaybe so
+                            // pdf-lib does not throw a typed-instance error when a key is absent.
+                            var namesDict = doc.catalog.lookupMaybe(PDFLib.PDFName.of('Names'), PDFLib.PDFDict);
+                            var embeddedDict = namesDict && namesDict.lookupMaybe(PDFLib.PDFName.of('EmbeddedFiles'), PDFLib.PDFDict);
+                            var nameArray = embeddedDict && embeddedDict.lookupMaybe(PDFLib.PDFName.of('Names'), PDFLib.PDFArray);
                             var fileSpecs = {};
-                            for (var n = 0; n + 1 < nameArray.size(); n += 2) {
-                                var specRef = nameArray.get(n + 1), spec = doc.context.lookup(specRef, PDFLib.PDFDict);
-                                var fileNameObj = spec.lookup(PDFLib.PDFName.of('UF')) || spec.lookup(PDFLib.PDFName.of('F'));
-                                if (fileNameObj && fileNameObj.decodeText) fileSpecs[fileNameObj.decodeText()] = specRef;
+                            if (nameArray) {
+                                for (var n = 0; n + 1 < nameArray.size(); n += 2) {
+                                    var specRef = nameArray.get(n + 1);
+                                    var spec = doc.context.lookupMaybe(specRef, PDFLib.PDFDict);
+                                    if (!spec) continue;
+                                    var fileNameObj = spec.lookupMaybe(PDFLib.PDFName.of('UF')) || spec.lookupMaybe(PDFLib.PDFName.of('F'));
+                                    if (fileNameObj && fileNameObj.decodeText) fileSpecs[fileNameObj.decodeText()] = specRef;
+                                }
                             }
                             photoLinks.forEach(function (link) {
                                 var photo = uploadedPhotos[link.index];
                                 var specRef = photo && fileSpecs[photo.name];
+                                // Keep the photo embedded even if a PDF viewer/library version
+                                // does not expose a name-tree entry for its clickable annotation.
                                 if (!specRef || link.w <= 2 || link.h <= 2) return;
                                 var rectPoints = [link.x * 72 / 25.4, pageHeight - ((link.y + link.h) * 72 / 25.4), (link.x + link.w) * 72 / 25.4, pageHeight - (link.y * 72 / 25.4)];
                                 var action = doc.context.obj({ S: PDFLib.PDFName.of('Launch'), F: specRef, NewWindow: true });
