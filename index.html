@@ -710,7 +710,7 @@
             hiddenPhotoInput.addEventListener('change', function (e) {
                 var files = Array.prototype.slice.call(e.target.files || []).slice(0, 4 - uploadedPhotos.length);
                 files.forEach(function (f) {
-                    processImageToCanvas(f, 3000, 0.96, function (p) {
+                    processImageToCanvas(f, 4096, 0.95, function (p) {
                         if (uploadedPhotos.length < 4) { p.name = 'Foto_' + (uploadedPhotos.length + 1) + '.jpg'; p.url = ''; uploadedPhotos.push(p); renderPhotoThumbnails(); }
                     });
                 });
@@ -833,19 +833,43 @@
                         pdf.setProperties({ title:'Gebrüder Weiss - Inspection Report', subject:'Vehicle inspection report with high-resolution photos', creator:'GW Inspection' });
                         pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
 
-                        // Re-place each original-quality photo over its small preview.
-                        // The thumbnail stays visually small, while the PDF stores the photo pixels at full resolution.
-                        photoRects.forEach(function (r) {
+                        // 1) Small thumbnails on page 1 use the ORIGINAL photo pixels (crisp, not the screenshot).
+                        var validRects = photoRects.filter(function (r) { var p = uploadedPhotos[r.index]; return p && p.dataUrl; });
+                        validRects.forEach(function (r) {
                             var photo = uploadedPhotos[r.index];
-                            if (!photo || !photo.dataUrl) return;
                             var pw = photo.width || 4, ph = photo.height || 3;
                             var scale = Math.min(r.w / pw, (r.h - 6) / ph);
                             var drawW = pw * scale, drawH = ph * scale;
-                            var drawX = r.x + (r.w - drawW) / 2;
-                            var drawY = r.y + ((r.h - 6) - drawH) / 2;
-                            pdf.addImage(photo.dataUrl, 'JPEG', drawX, drawY, drawW, drawH, 'photo_' + r.index, 'FAST');
-                            // A same-page zoom destination makes supported PDF readers zoom into the tapped thumbnail.
-                            try { pdf.link(r.x, r.y, r.w, r.h, { pageNumber: 1, top: Math.max(0, r.y - 12), zoom: 2.5 }); } catch (e) {}
+                            pdf.addImage(photo.dataUrl, 'JPEG', r.x + (r.w - drawW) / 2, r.y + ((r.h - 6) - drawH) / 2, drawW, drawH, 'photo_' + r.index, 'NONE');
+                        });
+
+                        // 2) One full-screen page per photo (full resolution, page orientation follows the photo).
+                        var pageNos = [];
+                        validRects.forEach(function (r, n) {
+                            var photo = uploadedPhotos[r.index];
+                            var pw = photo.width || 4, ph = photo.height || 3;
+                            var landscape = pw > ph;
+                            var PW = landscape ? 297 : 210, PH = landscape ? 210 : 297;
+                            pdf.addPage('a4', landscape ? 'landscape' : 'portrait');
+                            var pageNo = pdf.internal.getNumberOfPages();
+                            pageNos.push(pageNo);
+                            var barH = 10, m = 4;
+                            pdf.setFillColor(15, 23, 42); pdf.rect(0, 0, PW, barH, 'F');
+                            pdf.setFillColor(243, 112, 33); pdf.rect(0, barH, PW, 0.8, 'F');
+                            pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10);
+                            pdf.text('<  BACK TO REPORT', m + 2, 6.6);
+                            pdf.text('PHOTO ' + (n + 1) + ' / ' + validRects.length, PW - m - 2, 6.6, { align: 'right' });
+                            var availW = PW - 2 * m, availH = PH - barH - 0.8 - 2 * m;
+                            var s = Math.min(availW / pw, availH / ph);
+                            var dw = pw * s, dh = ph * s;
+                            pdf.addImage(photo.dataUrl, 'JPEG', (PW - dw) / 2, barH + 0.8 + m + (availH - dh) / 2, dw, dh, 'photo_' + r.index, 'NONE');
+                            try { pdf.link(0, 0, PW, barH, { pageNumber: 1, magFactor: 'Fit' }); } catch (e) {}
+                        });
+
+                        // 3) Tapping a thumbnail on page 1 opens its full-screen page (works in phone & desktop PDF viewers).
+                        pdf.setPage(1);
+                        validRects.forEach(function (r, n) {
+                            try { pdf.link(r.x, r.y, r.w, r.h, { pageNumber: pageNos[n], magFactor: 'Fit' }); } catch (e) {}
                         });
                         return pdf.output('blob');
                     });
@@ -993,225 +1017,4 @@
                     var isCloud = it.source === 'shared' || it.source === 'both';
                     var vTitle = [it.truck, it.trailer].filter(Boolean).join(' / ') || 'ტრანსპორტი —';
                     info.innerHTML =
-                        '<div class="flex items-center gap-1.5 flex-wrap"><span class="text-xs font-extrabold text-slate-900">' + vTitle + '</span><span class="text-[9px] font-bold ' + (isCloud ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200') + ' border px-1.5 py-0.5 rounded">' + (isCloud ? 'Cloud' : 'Local') + '</span></div>' +
-                        '<div class="text-[11px] font-bold text-slate-700 mt-1 truncate">მძღოლი: ' + (it.driverName || '—') + (it.driverPhone ? (' · ' + it.driverPhone) : '') + '</div>' +
-                        '<div class="text-[10px] text-slate-500 mt-0.5">' + formatHistoryDate(it.inspectionDate) + (it.vehicleType ? ' · ' + it.vehicleType : '') + (it.direction ? ' · ' + it.direction : '') + (it.inspector ? ' · ' + it.inspector : '') + '</div>';
-
-                    if (Array.isArray(it.damages) && it.damages.length) {
-                        info.innerHTML += '<div class="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded-lg px-2 py-1 mt-1.5">დაზიანება: ' + it.damages.join(', ') + '</div>';
-                    }
-                    if (Array.isArray(it.photoUrls) && it.photoUrls.length) {
-                        var pRow = document.createElement('div'); pRow.className = 'flex flex-wrap gap-2.5 mt-1.5';
-                        it.photoUrls.forEach(function (p) { if (p && p.url) { var a = document.createElement('a'); a.href = p.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'text-[10px] font-mono font-bold text-blue-700 underline'; a.textContent = p.name || 'Foto.jpg'; pRow.appendChild(a); } });
-                        info.appendChild(pRow);
-                    }
-
-                    var actions = document.createElement('div'); actions.className = 'flex flex-col gap-1 shrink-0';
-                    if (it.blob) {
-                        var dl = document.createElement('button'); dl.type = 'button'; dl.className = 'w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs'; dl.innerHTML = '<i class="fa-solid fa-download"></i>';
-                        dl.addEventListener('click', function () { triggerBlobDownload(it.blob, it.fileName || 'GW_Inspection.pdf'); });
-                        actions.appendChild(dl);
-                    }
-                    if (it.localId) {
-                        var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-xs'; rm.innerHTML = '<i class="fa-solid fa-trash"></i>';
-                        rm.addEventListener('click', function () {
-                            openHistoryDb().then(function (db) { return new Promise(function (res) { var tx = db.transaction('reports', 'readwrite'); tx.objectStore('reports').delete(it.localId); tx.oncomplete = res; }); }).then(function () { loadLocalAndMergeHistory(); updateHistoryStorage(); });
-                        });
-                        actions.appendChild(rm);
-                    }
-                    card.appendChild(info); card.appendChild(actions); list.appendChild(card);
-                });
-            }
-
-            document.querySelectorAll('.hfilter-btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    activeHistoryFilter = btn.getAttribute('data-hfilter'); historyPage = 0;
-                    document.querySelectorAll('.hfilter-btn').forEach(function (b) { b.className = 'hfilter-btn px-2.5 py-1 rounded-lg text-[11px] font-bold ' + (b.getAttribute('data-hfilter') === activeHistoryFilter ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'); });
-                    renderInspectionHistory();
-                });
-            });
-
-            function updateHistoryStorage() {
-                var text = document.getElementById('historyStorageText'), bar = document.getElementById('historyStorageBar');
-                if (!navigator.storage || !navigator.storage.estimate) { text.textContent = 'მიუწვდომელია'; return; }
-                navigator.storage.estimate().then(function (e) {
-                    var u = e.usage || 0, q = e.quota || 0;
-                    var fmt = function (n) { return n >= 1073741824 ? (n / 1073741824).toFixed(2) + ' GB' : n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1024).toFixed(0) + ' KB'; };
-                    text.textContent = fmt(u) + ' / ' + (q ? fmt(q) : '—');
-                    bar.style.width = (q ? Math.min(100, (u / q) * 100) : 0).toFixed(1) + '%';
-                }).catch(function () { text.textContent = 'ვერ განისაზღვრა'; });
-            }
-
-            document.getElementById('historySearch').addEventListener('input', function () { clearTimeout(historySearchTimer); historySearchTimer = setTimeout(function () { historyPage = 0; renderInspectionHistory(); }, 200); });
-            document.getElementById('historyPrevBtn').addEventListener('click', function () { if (historyPage > 0) { historyPage--; renderInspectionHistory(); } });
-            document.getElementById('historyNextBtn').addEventListener('click', function () { historyPage++; renderInspectionHistory(); });
-            document.getElementById('clearHistoryBtn').addEventListener('click', function () {
-                if (!confirm('ნამდვილად გსურთ ლოკალური PDF არქივის გასუფთავება?')) return;
-                openHistoryDb().then(function (db) { return new Promise(function (res) { var tx = db.transaction('reports', 'readwrite'); tx.objectStore('reports').clear(); tx.oncomplete = res; }); }).then(function () { historyPage = 0; loadLocalAndMergeHistory(); updateHistoryStorage(); showToast('ლოკალური არქივი გასუფთავდა'); });
-            });
-
-            document.getElementById('backupHistoryBtn').addEventListener('click', function () {
-                var btn = this, old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> მზადდება...';
-                if (typeof JSZip === 'undefined') { showToast('ZIP ბიბლიოთეკა ვერ ჩაიტვირთა'); btn.disabled = false; btn.innerHTML = old; return; }
-                openHistoryDb().then(function (db) {
-                    return new Promise(function (resolve, reject) {
-                        var zip = new JSZip(), folder = zip.folder('GW_Inspection_Backup'), csv = ['ID,Date,Truck,Trailer,Container,Driver,Phone,Type,Direction,Inspector,Damages,File'];
-                        var req = db.transaction('reports', 'readonly').objectStore('reports').openCursor();
-                        req.onsuccess = function () {
-                            var c = req.result;
-                            if (!c) { folder.file('index.csv', '\uFEFF' + csv.join('\n')); zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 3 } }).then(resolve).catch(reject); return; }
-                            var x = c.value, safe = (x.fileName || ('inspection_' + x.id + '.pdf')).replace(/[\\/:*?"<>|]/g, '_');
-                            if (x.blob) folder.file(String(x.id).padStart(6, '0') + '_' + safe, x.blob);
-                            csv.push([x.id, x.inspectionDate, x.truck, x.trailer, x.container, x.driverName, x.driverPhone, x.vehicleType, x.direction, x.inspector, (x.damages || []).join(' | '), safe].map(function (v) { return '"' + String(v || '').replace(/"/g, '""') + '"'; }).join(','));
-                            c.continue();
-                        };
-                        req.onerror = function () { reject(req.error); };
-                    });
-                }).then(function (blob) { triggerBlobDownload(blob, 'GW_Inspection_Backup_' + new Date().toISOString().slice(0, 10) + '.zip'); showToast('სარეზერვო ZIP მზად არის'); })
-                  .catch(function () { showToast('ZIP შექმნა ვერ მოხერხდა'); })
-                  .finally(function () { btn.disabled = false; btn.innerHTML = old; });
-            });
-
-            if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
-
-            function resetActionButtons() {
-                downloadPdfBtn.disabled = false;
-                downloadPdfBtn.innerHTML = '<i class="fa-solid fa-download text-orange-400"></i><span>PDF ჩამოტვირთვა</span>';
-                sendEmailPdfBtn.disabled = false;
-                sendEmailPdfBtn.innerHTML = '<i class="fa-solid fa-paper-plane text-xs"></i><span>გაგზავნა მეილზე (Gmail / Share)</span>';
-            }
-
-            downloadPdfBtn.addEventListener('click', function () {
-                if (downloadPdfBtn.disabled) return;
-                var fileName = getOutputFileName();
-                downloadPdfBtn.disabled = true; downloadPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>იტვირთება...</span>';
-                createA4PdfBlob().then(function (blob) {
-                    saveReportToHistory(blob, fileName).catch(function () {});
-                    triggerBlobDownload(blob, fileName);
-                    showToast('PDF ჩამოიტვირთა: ' + fileName);
-                }).catch(function (err) { showToast('შეცდომა: ' + (err && err.message ? err.message : '')); })
-                  .finally(resetActionButtons);
-            });
-
-            sendEmailPdfBtn.addEventListener('click', function () {
-                if (sendEmailPdfBtn.disabled) return;
-                var fileName = getOutputFileName();
-                sendEmailPdfBtn.disabled = true;
-                sendEmailPdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>PDF და ფოტო ბმულები მზადდება...</span>';
-                createA4PdfBlob().then(function (blob) {
-                    saveReportToHistory(blob, fileName).catch(function () {});
-                    driverNameInput.value = capitalizeName(driverNameInput.value);
-                    var truck = document.getElementById('inputTruckPlate').value.trim();
-                    var trailer = document.getElementById('inputTrailerPlate').value.trim();
-                    var dir = document.getElementById('selectDirection').value;
-                    var pdfFile = new File([blob], fileName, { type:'application/pdf' });
-
-                    if (navigator.share && (!navigator.canShare || navigator.canShare({ files:[pdfFile] }))) {
-                        return navigator.share({
-                            files:[pdfFile],
-                            title:'Gebrüder Weiss - ' + fileName,
-                            text:'ინსპექტირების აქტი: ' + truck + ' / ' + trailer + ' (' + dir + ')'
-                        }).then(function () {
-                            showToast('PDF გაზიარების აპლიკაციას გადაეცა');
-                        }).catch(function (e) {
-                            if (e && e.name === 'AbortError') return;
-                            triggerBlobDownload(blob, fileName);
-                            openMailClient(fileName, truck, trailer, dir);
-                        });
-                    }
-                    // Browsers do not allow mailto: to attach a file automatically.
-                    triggerBlobDownload(blob, fileName);
-                    openMailClient(fileName, truck, trailer, dir);
-                }).catch(function (err) {
-                    showToast('შეცდომა: ' + (err && err.message ? err.message : 'PDF ვერ შეიქმნა'));
-                }).finally(resetActionButtons);
-            });
-
-            function openMailClient(fileName, truck, trailer, dir) {
-                var to = encodeURIComponent(settings.recipientEmail || '');
-                var subj = encodeURIComponent('Gebrüder Weiss - ინსპექტირება: ' + truck + ' / ' + trailer + ' (' + dir + ')');
-                var body = encodeURIComponent('გამარჯობა,\n\nგიგზავნით სატრანსპორტო საშუალების გარეგანი აღწერის აქტს (' + fileName + ').\nPDF ჩამოტვირთულია მოწყობილობაში — გთხოვთ, მიამაგროთ წერილს.\nმანქანის ნომერი: ' + truck + '\nმისაბმელის ნომერი: ' + trailer + '\nმძღოლი: ' + (driverNameInput.value.trim() || '—') + '\nმიმართულება: ' + dir + '\nინსპექტორი: ' + (settings.inspectorName || '') + '\n');
-                showToast('PDF ჩამოიტვირთა — მეილში ფაილი ხელით მიამაგრეთ');
-                window.location.href = 'mailto:' + to + '?subject=' + subj + '&body=' + body;
-            }
-
-            loadSettings(); setDefaultDateTime(); renderDynamicChecklist(); applyLanguage(); syncSettingsToUI(); updateLiveFileName(); loadLocalAndMergeHistory(); updateHistoryStorage();
-        });
-    </script>
-
-    <script>
-      if ("serviceWorker" in navigator) { window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); }); }
-    </script>
-
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-analytics.js";
-      import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-      import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-
-      const app = initializeApp({
-        apiKey: "AIzaSyCdmaxREu-2eOSKZy5CNcA5_5lL7u3mkts",
-        authDomain: "gw-trailer-inspection.firebaseapp.com",
-        projectId: "gw-trailer-inspection",
-        storageBucket: "gw-trailer-inspection.firebasestorage.app",
-        messagingSenderId: "675018188483",
-        appId: "1:675018188483:web:2b63529e3f72cb84eca476",
-        measurementId: "G-CD8CZ6Z3L1"
-      });
-      getAnalytics(app);
-      const auth = getAuth(app), db = getFirestore(app);
-      const authGate = document.getElementById("auth-gate"), appContent = document.getElementById("app-content"), loginForm = document.getElementById("login-form"), loginError = document.getElementById("login-error");
-      let unsubscribeInspections = null;
-
-      function showGate(msg = "") {
-        if (unsubscribeInspections) { unsubscribeInspections(); unsubscribeInspections = null; }
-        if (appContent) appContent.style.display = "none";
-        authGate.style.display = "flex"; loginError.textContent = msg;
-      }
-      function showApp() { authGate.style.display = "none"; if (appContent) appContent.style.display = ""; }
-
-      document.getElementById("logoutBtn").addEventListener("click", function () { signOut(auth); });
-
-
-
-      window.saveUserProfileToFirestore = async function (profileData) {
-        if (!auth.currentUser) return;
-        try { await updateDoc(doc(db, "users", auth.currentUser.uid), profileData); } catch (e) {}
-      };
-
-      window.saveSharedInspectionToFirestore = async function (record) {
-        if (!auth.currentUser) return null;
-        const d = await addDoc(collection(db, "inspections"), { ...record, authorUid: auth.currentUser.uid, authorEmail: auth.currentUser.email || "", serverCreatedAt: Date.now() });
-        return d.id;
-      };
-
-      window.startSharedInspectionsListener = function () {
-        if (unsubscribeInspections) unsubscribeInspections();
-        const q = query(collection(db, "inspections"), orderBy("createdAt", "desc"), limit(250));
-        unsubscribeInspections = onSnapshot(q, function (snap) {
-          const items = []; snap.forEach(function (d) { items.push({ cloudId: d.id, ...d.data() }); });
-          if (typeof window.onSharedInspectionsUpdated === "function") window.onSharedInspectionsUpdated(items);
-        });
-      };
-
-      loginForm.addEventListener("submit", async function (e) {
-        e.preventDefault(); loginError.textContent = "";
-        try { await signInWithEmailAndPassword(auth, document.getElementById("login-email").value.trim(), document.getElementById("login-password").value); }
-        catch (err) { showGate("მეილი ან პაროლი არასწორია."); }
-      });
-
-      onAuthStateChanged(auth, async function (user) {
-        if (!user) { showGate(); return; }
-        try {
-          const snap = await getDoc(doc(db, "users", user.uid));
-          if (!snap.exists()) { await signOut(auth); showGate("თქვენი ანგარიში ნებადართულ სიაში არ არის."); return; }
-          const data = snap.data();
-          if (data.active !== true) { await signOut(auth); showGate("თქვენი ანგარიში აქტიური არ არის."); return; }
-          window.currentUserProfile = { uid: user.uid, email: user.email || data.email || "", ...data };
-          if (typeof window.onUserAuthenticated === "function") window.onUserAuthenticated();
-          showApp();
-        } catch (err) { await signOut(auth); showGate("მომხმარებლის შემოწმებისას დაფიქსირდა შეცდომა."); }
-      });
-    </script>
-</body>
-</html>
+                        '<div class="flex items-center gap-1.5 flex-wrap"><span class="text-xs font-extrabold text-sla
