@@ -18,7 +18,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root { --gw-orange:#f37021; --gw-ink:#292929; --gw-muted:#687078; --gw-line:#e5e7eb; --gw-paper:#f6f6f4; }
@@ -178,7 +177,7 @@
                     <div class="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm shrink-0"><i class="fa-solid fa-camera-retro"></i></div>
                     <div class="text-left">
                         <p class="text-xs sm:text-sm font-bold text-slate-700">ფოტოს გადაღება ან არჩევა</p>
-                        <p class="text-[10px] text-slate-400">PDF-ში გამოჩნდება მხოლოდ ფოტოს ბმული — ფოტო ცალკე ფანჯარაში გაიხსნება</p>
+                        <p class="text-[10px] text-slate-400">PDF-ში ფოტოები პატარა ზომით გამოჩნდება; დაჭერით შეძლებთ გადიდებას</p>
                     </div>
                 </button>
                 <input type="file" id="hiddenPhotoInput" accept="image/*" multiple class="hidden">
@@ -327,9 +326,9 @@
                         <tbody id="pdfChecklistBody"></tbody>
                     </table>
                     <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 10px; margin-bottom: 12px; background: #fffbeb; font-size: 10.5px;"><strong style="color: #92400e;">დამატებითი შენიშვნა:</strong><span id="pdfNotes" style="color: #1e293b; margin-left: 5px;">შენიშვნების გარეშე</span></div>
-                    <div id="pdfPhotosLinkSection" style="display: none; border: 1px solid #cbd5e1; border-radius: 6px; padding: 9px 12px; background: #f8fafc;">
-                        <div style="font-size: 10.5px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">ფოტო ბმულები (დააჭირეთ ნაწერს ახალ გვერდზე გასახსნელად):</div>
-                        <div id="pdfPhotoLinksContainer" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center;"></div>
+                    <div id="pdfPhotosLinkSection" style="display: none; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 9px; background: #f8fafc;">
+                        <div id="pdfPhotosTitle" style="font-size: 9.5px; font-weight: 800; color: #0f172a; margin-bottom: 5px;">ფოტოები · დააჭირეთ ფოტოს გასადიდებლად</div>
+                        <div id="pdfPhotoLinksContainer" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; align-items: stretch;"></div>
                     </div>
                 </div>
                 <div style="flex: 1;"></div>
@@ -392,7 +391,7 @@
                 '2. ტრანსპორტი, ლუქი და მძღოლი':'2. Vehicle, seal & driver','მანქანის ნომერი *':'Truck registration *','მისაბმელის ნომერი *':'Trailer registration *','კონტეინერის ნომერი':'Container number','ლუქის ნომერი / ნომრები':'Seal number(s)',
                 'მძღოლის სახელი და გვარი':'Driver full name','სახელი გვარი':'First name Last name','მძღოლის ტელეფონი':'Driver phone','მძღოლის ისტორია':'Driver history',
                 '3. კომპონენტები —':'3. Components —','✓ პწიჩკა ან დაზიანება':'✓ Mark as OK or select damage','დაზიანება...':'Select damage...','დამატებითი შენიშვნა':'Additional notes','დამატებითი დეტალები (სურვილისამებრ)...':'Additional details (optional)...',
-                '4. ფოტოფიქსაცია (მაქს. 4)':'4. Photos (max. 4)','ფოტოს გადაღება ან არჩევა':'Take or choose photos','PDF-ში გამოჩნდება მხოლოდ ფოტოს ბმული — ფოტო ცალკე ფანჯარაში გაიხსნება':'Photos are embedded in the PDF and linked from the report.',
+                '4. ფოტოფიქსაცია (მაქს. 4)':'4. Photos (max. 4)','ფოტოს გადაღება ან არჩევა':'Take or choose photos','PDF-ში ფოტოები პატარა ზომით გამოჩნდება; დაჭერით შეძლებთ გადიდებას':'Photos appear as small previews in the PDF; tap to zoom.',
                 'აქტების ისტორია (საერთო გუნდური + ლოკალური)':'Report history (team + local)','ძებნა: მძღოლი, ტელეფონი, მანქანა, მისაბმელი, კონტეინერი, მიმართულება...':'Search: driver, phone, truck, trailer, container, direction...',
                 'ყველა':'All','საერთო (Cloud)':'Team (Cloud)','ლოკალური PDF':'Local PDF','დაზიანებით':'With damage','მძღოლის შემოსვლების დოსიე':'Driver visit history','შემოსვლა':'Visits','სარეზერვო ZIP':'Backup ZIP','ლოკალური გასუფთავება':'Clear local history',
                 'ბრაუზერის საცავი':'Browser storage','მოწმდება...':'Checking...','ისტორია იტვირთება...':'Loading history...','წინა':'Previous','შემდეგი':'Next','გვერდი':'Page',
@@ -711,7 +710,7 @@
             hiddenPhotoInput.addEventListener('change', function (e) {
                 var files = Array.prototype.slice.call(e.target.files || []).slice(0, 4 - uploadedPhotos.length);
                 files.forEach(function (f) {
-                    processImageToCanvas(f, 2400, 0.94, function (p) {
+                    processImageToCanvas(f, 3000, 0.96, function (p) {
                         if (uploadedPhotos.length < 4) { p.name = 'Foto_' + (uploadedPhotos.length + 1) + '.jpg'; p.url = ''; uploadedPhotos.push(p); renderPhotoThumbnails(); }
                     });
                 });
@@ -790,12 +789,22 @@
                 var validPhotos = uploadedPhotos.filter(function (p) { return Boolean(p && p.dataUrl); });
                 if (validPhotos.length) {
                     linksSection.style.display = 'block';
+                    document.getElementById('pdfPhotosTitle').textContent = currentLanguage === 'en' ? 'INSPECTION PHOTOS · Tap a photo to zoom' : 'ფოტოები · ფოტოზე დაჭერით შეძლებთ გადიდებას';
                     validPhotos.forEach(function (p, i) {
-                        var link = document.createElement('span');
-                        link.setAttribute('data-embedded-photo-index', String(i));
-                        link.style.cssText = 'display:inline-block;color:#c94f0b;font-size:11.5px;font-weight:800;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px;padding:5px 9px;border:1px solid #f4b183;border-radius:5px;background:#fff7ed;';
-                        link.textContent = currentLanguage === 'en' ? ('OPEN PHOTO ' + (i + 1) + ' ↗') : ('ფოტოს გახსნა ' + (i + 1) + ' ↗');
-                        linksContainer.appendChild(link);
+                        var card = document.createElement('div');
+                        card.className = 'pdf-photo-thumb';
+                        card.setAttribute('data-photo-index', String(i));
+                        card.style.cssText = 'height:27mm;min-width:0;border:1px solid #cbd5e1;border-radius:5px;background:#fff;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;';
+                        var img = document.createElement('img');
+                        img.src = p.dataUrl;
+                        img.alt = p.name || ('Photo ' + (i + 1));
+                        img.style.cssText = 'width:100%;height:21mm;object-fit:contain;display:block;background:#f1f5f9;';
+                        var label = document.createElement('div');
+                        label.textContent = currentLanguage === 'en' ? ('PHOTO ' + (i + 1) + ' · TAP TO ZOOM') : ('ფოტო ' + (i + 1) + ' · გადიდება');
+                        label.style.cssText = 'height:5mm;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:800;color:#c94f0b;white-space:nowrap;';
+                        card.appendChild(img);
+                        card.appendChild(label);
+                        linksContainer.appendChild(card);
                     });
                 } else {
                     linksSection.style.display = 'none';
@@ -809,79 +818,36 @@
                 else { pdfSigImg.style.display = 'none'; }
             }
 
-            function dataUrlToBytes(dataUrl) {
-                var base64 = String(dataUrl).split(',')[1] || '';
-                var binary = atob(base64), bytes = new Uint8Array(binary.length);
-                for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                return bytes;
-            }
-
             function createA4PdfBlob() {
                 if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') return Promise.reject(new Error('PDF ბიბლიოთეკები ჯერ იტვირთება'));
-                if (uploadedPhotos.length && (!window.PDFLib || !window.PDFLib.PDFDocument)) return Promise.reject(new Error('PDF დანართების ბიბლიოთეკა ჯერ იტვირთება'));
                 return ensurePhotosUploaded().then(function () {
                     fillA4SheetData();
                     var sheet = document.getElementById('a4-sheet'), rect = sheet.getBoundingClientRect();
-                    var photoLinks = Array.prototype.slice.call(sheet.querySelectorAll('[data-embedded-photo-index]')).map(function (el) {
+                    var photoRects = Array.prototype.slice.call(sheet.querySelectorAll('.pdf-photo-thumb')).map(function (el) {
                         var r = el.getBoundingClientRect();
-                        return { index: Number(el.getAttribute('data-embedded-photo-index')), x: ((r.left - rect.left) / rect.width) * 210, y: ((r.top - rect.top) / rect.height) * 297, w: (r.width / rect.width) * 210, h: (r.height / rect.height) * 297 };
+                        return { index: Number(el.getAttribute('data-photo-index')), x: ((r.left - rect.left) / rect.width) * 210, y: ((r.top - rect.top) / rect.height) * 297, w: (r.width / rect.width) * 210, h: (r.height / rect.height) * 297 };
                     });
                     return window.html2canvas(sheet, { scale: 3, useCORS: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 15000 }).then(function (canvas) {
                         if (!canvas) throw new Error('PDF რენდერი ვერ მოესწრო');
                         var pdf = new window.jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true, putOnlyUsedFonts:true });
-                        pdf.setProperties({ title:'Gebrüder Weiss - Inspection Report', subject:'Vehicle inspection report with embedded photo attachments', creator:'GW Inspection' });
-                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
-                        var baseBlob = pdf.output('blob');
-                        if (!uploadedPhotos.length) return baseBlob;
+                        pdf.setProperties({ title:'Gebrüder Weiss - Inspection Report', subject:'Vehicle inspection report with high-resolution photos', creator:'GW Inspection' });
+                        pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', 0, 0, 210, 297, undefined, 'SLOW');
 
-                        return baseBlob.arrayBuffer().then(async function (buffer) {
-                            var PDFLib = window.PDFLib;
-                            var doc = await PDFLib.PDFDocument.load(buffer);
-                            var page = doc.getPages()[0], pageHeight = page.getHeight();
-                            for (var i = 0; i < uploadedPhotos.length; i++) {
-                                var photo = uploadedPhotos[i];
-                                await doc.attach(dataUrlToBytes(photo.dataUrl), photo.name || ('Foto_' + (i + 1) + '.jpg'), {
-                                    mimeType: 'image/jpeg', description: 'Gebrüder Weiss inspection photo ' + (i + 1),
-                                    creationDate: new Date(), modificationDate: new Date()
-                                });
-                            }
-                            // Resolve embedded file specifications from the PDF name tree.
-                            var namesDict = doc.catalog.lookupMaybe(PDFLib.PDFName.of('Names'), PDFLib.PDFDict);
-                            var embeddedDict = namesDict && namesDict.lookupMaybe(PDFLib.PDFName.of('EmbeddedFiles'), PDFLib.PDFDict);
-                            var nameArray = embeddedDict && embeddedDict.lookupMaybe(PDFLib.PDFName.of('Names'), PDFLib.PDFArray);
-                            var fileSpecs = {};
-                            if (nameArray) {
-                                for (var n = 0; n + 1 < nameArray.size(); n += 2) {
-                                    var keyObj = nameArray.get(n), specRef = nameArray.get(n + 1);
-                                    var keyName = keyObj && keyObj.decodeText ? keyObj.decodeText() : (keyObj && keyObj.decodeText ? keyObj.decodeText() : '');
-                                    var spec = doc.context.lookupMaybe(specRef, PDFLib.PDFDict);
-                                    if (spec) {
-                                        var fileNameObj = spec.lookupMaybe(PDFLib.PDFName.of('UF')) || spec.lookupMaybe(PDFLib.PDFName.of('F'));
-                                        var decoded = fileNameObj && fileNameObj.decodeText ? fileNameObj.decodeText() : keyName;
-                                        if (decoded) fileSpecs[decoded] = specRef;
-                                        if (keyName) fileSpecs[keyName] = specRef;
-                                    }
-                                }
-                            }
-                            photoLinks.forEach(function (link) {
-                                var photo = uploadedPhotos[link.index];
-                                var specRef = photo && fileSpecs[photo.name];
-                                if (!specRef || link.w <= 2 || link.h <= 2) return;
-                                var rectPoints = [link.x * 72 / 25.4, pageHeight - ((link.y + link.h) * 72 / 25.4), (link.x + link.w) * 72 / 25.4, pageHeight - (link.y * 72 / 25.4)];
-                                // Launch the embedded image file when the visible text is tapped.
-                                // The file specification points to the attachment inside this PDF;
-                                // no external URL, Firebase Storage, or separate photo page is used.
-                                var action = doc.context.obj({ S: PDFLib.PDFName.of('Launch'), F: specRef, NewWindow: true });
-                                var annotation = doc.context.obj({
-                                    Type: PDFLib.PDFName.of('Annot'), Subtype: PDFLib.PDFName.of('Link'),
-                                    Rect: rectPoints, Border: [0, 0, 0], A: action,
-                                    Contents: PDFLib.PDFString.of('Open embedded photo ' + photo.name)
-                                });
-                                page.node.addAnnot(doc.context.register(annotation));
-                            });
-                            var finalBytes = await doc.save({ useObjectStreams: true, addDefaultPage: false });
-                            return new Blob([finalBytes], { type:'application/pdf' });
+                        // Re-place each original-quality photo over its small preview.
+                        // The thumbnail stays visually small, while the PDF stores the photo pixels at full resolution.
+                        photoRects.forEach(function (r) {
+                            var photo = uploadedPhotos[r.index];
+                            if (!photo || !photo.dataUrl) return;
+                            var pw = photo.width || 4, ph = photo.height || 3;
+                            var scale = Math.min(r.w / pw, (r.h - 6) / ph);
+                            var drawW = pw * scale, drawH = ph * scale;
+                            var drawX = r.x + (r.w - drawW) / 2;
+                            var drawY = r.y + ((r.h - 6) - drawH) / 2;
+                            pdf.addImage(photo.dataUrl, 'JPEG', drawX, drawY, drawW, drawH, 'photo_' + r.index, 'FAST');
+                            // A same-page zoom destination makes supported PDF readers zoom into the tapped thumbnail.
+                            try { pdf.link(r.x, r.y, r.w, r.h, { pageNumber: 1, top: Math.max(0, r.y - 12), zoom: 2.5 }); } catch (e) {}
                         });
+                        return pdf.output('blob');
                     });
                 });
             }
